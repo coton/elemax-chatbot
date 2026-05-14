@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ChatBubbleOvalLeftEllipsisIcon,
   PencilSquareIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import { ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisSolidIcon } from '@heroicons/react/24/solid'
 import Button from '@/app/components/base/button'
@@ -20,6 +21,7 @@ export interface ISidebarProps {
   copyRight: string
   currentId: string
   onCurrentIdChange: (id: string) => void
+  onDeleteConversation: (id: string) => void
   list: ConversationItem[]
 }
 
@@ -27,6 +29,7 @@ const Sidebar: FC<ISidebarProps> = ({
   copyRight,
   currentId,
   onCurrentIdChange,
+  onDeleteConversation,
   list,
 }) => {
   const { t } = useTranslation()
@@ -61,16 +64,30 @@ const Sidebar: FC<ISidebarProps> = ({
                 'group flex items-center rounded-md px-2 py-2 text-sm font-medium cursor-pointer',
               )}
             >
-              <ItemIcon
-                className={classNames(
-                  isCurrent
-                    ? 'text-primary-600'
-                    : 'text-gray-400 group-hover:text-gray-500',
-                  'mr-3 h-5 w-5 flex-shrink-0',
-                )}
-                aria-hidden="true"
-              />
-              {item.name}
+              <div className="flex min-w-0 flex-1 items-center">
+                <ItemIcon
+                  className={classNames(
+                    isCurrent
+                      ? 'text-primary-600'
+                      : 'text-gray-400 group-hover:text-gray-500',
+                    'mr-3 h-5 w-5 flex-shrink-0',
+                  )}
+                  aria-hidden="true"
+                />
+                <span className="truncate">{item.name}</span>
+              </div>
+              <button
+                type="button"
+                className="ml-2 hidden h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 hover:bg-red-50 hover:text-red-600 group-hover:flex focus:flex"
+                aria-label={t('app.chat.deleteConversation')}
+                title={t('app.chat.deleteConversation')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeleteConversation(item.id)
+                }}
+              >
+                <TrashIcon className="h-4 w-4" aria-hidden="true" />
+              </button>
             </div>
           )
         })}

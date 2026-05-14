@@ -16,6 +16,10 @@ const translation = {
     configDisabled:
       'La configuración de la sesión anterior se ha utilizado para esta sesión.',
     startChat: 'Comenzar chat',
+    deleteConversation: 'Eliminar conversación',
+    deleteConversationConfirm: '¿Eliminar esta conversación? Esta acción no se puede deshacer.',
+    deleteConversationSuccess: 'Conversación eliminada',
+    deleteConversationFailed: 'No se pudo eliminar la conversación',
     privacyPolicyLeft:
       'Por favor lea la ',
     privacyPolicyMiddle:

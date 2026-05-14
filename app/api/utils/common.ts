@@ -1,24 +1,37 @@
 import type { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 import { ChatClient } from 'dify-client'
-import { v4 } from 'uuid'
-import { API_KEY, API_URL, APP_ID, APP_INFO } from '@/config'
+import { API_KEY, API_URL, APP_ID } from '@/config'
 
 const userPrefix = `user_${APP_ID}:`
 
-export const getInfo = (request: NextRequest) => {
-  const sessionId = request.cookies.get('session_id')?.value || v4()
-  const user = userPrefix + sessionId
+export class UnauthorizedError extends Error {
+  status = 401
+
+  constructor() {
+    super('Unauthorized')
+  }
+}
+
+export const getInfo = async (_request?: NextRequest) => {
+  const { userId } = await auth()
+  if (!userId) {
+    throw new UnauthorizedError()
+  }
+
+  const user = userPrefix + userId
   return {
-    sessionId,
+    userId,
     user,
   }
 }
 
-export const setSession = (sessionId: string) => {
-  if (APP_INFO.disable_session_same_site)
-  { return { 'Set-Cookie': `session_id=${sessionId}; SameSite=None; Secure` } }
+export const handleRouteError = (error: any) => {
+  const status = error?.status || error?.response?.status || 500
+  const message = error?.response?.data?.message || error?.message || 'Internal Server Error'
 
-  return { 'Set-Cookie': `session_id=${sessionId}` }
+  return NextResponse.json({ message }, { status })
 }
 
 export const client = new ChatClient(API_KEY, API_URL || undefined)

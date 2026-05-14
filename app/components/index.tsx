@@ -9,7 +9,7 @@ import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -72,6 +72,7 @@ const Main: FC<IMainProps> = () => {
     getCurrConversationId,
     setCurrConversationId,
     getConversationIdFromStorage,
+    clearConversationIdFromStorage,
     isNewConversation,
     currConversationInfo,
     currInputs,
@@ -299,6 +300,44 @@ const Main: FC<IMainProps> = () => {
     notify({ type: 'error', message })
   }
 
+  const handleDeleteConversation = async (id: string) => {
+    if (id === '-1') { return }
+
+    if (id === currConversationId && isResponding) {
+      notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
+      return
+    }
+
+    // eslint-disable-next-line no-alert
+    if (!globalThis.confirm(t('app.chat.deleteConversationConfirm'))) { return }
+
+    try {
+      await deleteConversationRequest(id)
+
+      const nextConversationList = conversationList.filter(item => item.id !== id)
+      setConversationList(nextConversationList)
+
+      if (id === currConversationId) {
+        setConversationIdChangeBecauseOfNew(false)
+        setChatNotStarted()
+
+        if (nextConversationList.length > 0) {
+          setCurrConversationId(nextConversationList[0].id, APP_ID)
+        }
+        else {
+          clearConversationIdFromStorage(APP_ID)
+          setCurrConversationId('-1', APP_ID, false)
+          setChatList([])
+        }
+      }
+
+      notify({ type: 'success', message: t('app.chat.deleteConversationSuccess') })
+    }
+    catch (error: any) {
+      notify({ type: 'error', message: error?.message || t('app.chat.deleteConversationFailed') })
+    }
+  }
+
   const checkCanSend = () => {
     if (currConversationId !== '-1') { return true }
 
@@ -306,8 +345,9 @@ const Main: FC<IMainProps> = () => {
 
     let emptyRequiredInput = false
     promptConfig.prompt_variables.forEach((item) => {
-      if (item.required && !currInputs[item.key])
+      if (item.required && !currInputs[item.key]) {
         emptyRequiredInput = true
+      }
     })
 
     if (emptyRequiredInput) {
@@ -642,6 +682,7 @@ const Main: FC<IMainProps> = () => {
       <Sidebar
         list={conversationList}
         onCurrentIdChange={handleConversationIdChange}
+        onDeleteConversation={handleDeleteConversation}
         currentId={currConversationId}
         copyRight={APP_INFO.copyright || APP_INFO.title}
       />
