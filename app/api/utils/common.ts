@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { ChatClient } from 'dify-client'
 import { v4 } from 'uuid'
-import { API_KEY, API_URL, APP_ID, APP_INFO } from '@/config'
+import { APP_ID, APP_INFO } from '@/config'
+import { DIFY_API_URL, DIFY_APP_KEY } from '@/config/server'
 
 const userPrefix = `user_${APP_ID}:`
 
@@ -21,4 +22,4 @@ export const setSession = (sessionId: string) => {
   return { 'Set-Cookie': `session_id=${sessionId}` }
 }
 
-export const client = new ChatClient(API_KEY, API_URL || undefined)
+export const client = new ChatClient(DIFY_APP_KEY, DIFY_API_URL)

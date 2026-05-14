@@ -8,12 +8,14 @@ Create a file named `.env.local` in the current directory and copy the contents 
 # For example, in the URL `https://cloud.dify.ai/app/xxx/workflow`, the value `xxx` is your APP ID.
 NEXT_PUBLIC_APP_ID=
 
-# APP API Key: This is the key used to authenticate your app's API requests. 
-# You can generate it on the app's "API Access" page by clicking the "API Key" button in the top-right corner.
-NEXT_PUBLIC_APP_KEY=
+# Dify Backend Service API key.
+# Use DIFY_* instead of NEXT_PUBLIC_* because Dify API keys are secrets.
+# In Next.js, every NEXT_PUBLIC_* variable is bundled into frontend JavaScript
+# and can be read from the browser. Keep the app key server-side only.
+DIFY_APP_KEY=
 
 # APP URL: This is the API's base URL. If you're using the Dify cloud service, set it to: https://api.dify.ai/v1.
-NEXT_PUBLIC_API_URL=
+DIFY_API_URL=
 ```
 
 Config more in `config/index.ts` file:   
@@ -71,6 +73,35 @@ To learn more about Next.js, take a look at the following resources:
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel
+
+This repository is ready for Vercel Git automatic deployments.
+
+### Automatic deployment
+
+1. Push this project to GitHub, GitLab, or Bitbucket.
+2. In Vercel, create a new project and import this repository.
+3. If importing from a larger parent repository, set **Root Directory** to:
+
+```bash
+apps/elemax-chatbot
+```
+
+4. Keep the detected framework as **Next.js**. The build settings are also pinned in `vercel.json`:
+
+```bash
+Install Command: pnpm install --frozen-lockfile
+Build Command: pnpm build
+```
+
+5. Add these Environment Variables for Production, Preview, and Development:
+
+```bash
+NEXT_PUBLIC_APP_ID=
+DIFY_APP_KEY=
+DIFY_API_URL=https://api.dify.ai/v1
+```
+
+After the project is connected, Vercel will automatically create preview deployments for pull requests and production deployments for pushes to the production branch configured in Vercel.
 
 > ⚠️ If you are using [Vercel Hobby](https://vercel.com/pricing), your message will be truncated due to the limitation of vercel.
 
