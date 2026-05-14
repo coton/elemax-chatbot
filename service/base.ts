@@ -151,6 +151,7 @@ const handleStream = (
   onWorkflowFinished?: IOnWorkflowFinished,
   onNodeStarted?: IOnNodeStarted,
   onNodeFinished?: IOnNodeFinished,
+  onError?: IOnError,
 ) => {
   if (!response.ok) { throw new Error('Network response was not ok') }
 
@@ -174,7 +175,7 @@ const handleStream = (
             try {
               bufferObj = JSON.parse(message.substring(6)) as Record<string, any>// remove data: and parse as json
             }
-            catch (e) {
+            catch {
               // mute handle message cut off
               onData('', isFirstMessage, {
                 conversationId: bufferObj?.conversation_id,
@@ -241,6 +242,12 @@ const handleStream = (
         return
       }
       if (!hasError) { read() }
+    }).catch((e) => {
+      if (e?.name === 'AbortError') {
+        onError?.('aborted', 'aborted')
+        return
+      }
+      onError?.(`${e}`)
     })
   }
   read()
@@ -368,11 +375,15 @@ export const ssePost = (
     onNodeStarted,
     onNodeFinished,
     onError,
+    getAbortController,
   }: IOtherOptions,
 ) => {
   const options = Object.assign({}, baseOptions, {
     method: 'POST',
   }, fetchOptions)
+  const abortController = new AbortController()
+  options.signal = abortController.signal
+  getAbortController?.(abortController)
 
   const urlPrefix = API_PREFIX
   const urlWithPrefix = `${urlPrefix}${url.startsWith('/') ? url : `/${url}`}`
@@ -392,17 +403,25 @@ export const ssePost = (
         onError?.('Server Error')
         return
       }
+      const handleError = (message: string, code?: string) => {
+        if (code !== 'aborted') { Toast.notify({ type: 'error', message }) }
+        onError?.(message, code)
+      }
       return handleStream(res, (str: string, isFirstMessage: boolean, moreInfo: IOnDataMoreInfo) => {
         if (moreInfo.errorMessage) {
           Toast.notify({ type: 'error', message: moreInfo.errorMessage })
           return
         }
         onData?.(str, isFirstMessage, moreInfo)
-      }, () => {
-        onCompleted?.()
-      }, onThought, onMessageEnd, onMessageReplace, onFile, onWorkflowStarted, onWorkflowFinished, onNodeStarted, onNodeFinished)
+      }, (hasError?: boolean) => {
+        onCompleted?.(hasError)
+      }, onThought, onMessageEnd, onMessageReplace, onFile, onWorkflowStarted, onWorkflowFinished, onNodeStarted, onNodeFinished, handleError)
     })
     .catch((e) => {
+      if (abortController.signal.aborted) {
+        onError?.('aborted', 'aborted')
+        return
+      }
       Toast.notify({ type: 'error', message: e })
       onError?.(e)
     })

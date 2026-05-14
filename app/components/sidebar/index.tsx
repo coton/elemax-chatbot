@@ -78,7 +78,7 @@ const Sidebar: FC<ISidebarProps> = ({
               </div>
               <button
                 type="button"
-                className="ml-2 hidden h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 hover:bg-red-50 hover:text-red-600 group-hover:flex focus:flex"
+                className="ml-2 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded text-gray-400 opacity-0 pointer-events-none hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto"
                 aria-label={t('app.chat.deleteConversation')}
                 title={t('app.chat.deleteConversation')}
                 onClick={(e) => {
