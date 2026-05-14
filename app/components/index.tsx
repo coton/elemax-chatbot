@@ -27,6 +27,10 @@ export interface IMainProps {
   params: any
 }
 
+interface ConversationHistorySyncOptions {
+  autoGenerateNameForId?: string | null
+}
+
 const Main: FC<IMainProps> = () => {
   const { t } = useTranslation()
   const media = useBreakpoints()
@@ -104,6 +108,42 @@ const Main: FC<IMainProps> = () => {
   const conversationIntroduction = currConversationInfo?.introduction || ''
   const suggestedQuestions = currConversationInfo?.suggested_questions || []
 
+  const syncConversationHistory = async ({
+    autoGenerateNameForId,
+  }: ConversationHistorySyncOptions = {}) => {
+    const syncRequestId = conversationHistorySyncRequestIdRef.current + 1
+    conversationHistorySyncRequestIdRef.current = syncRequestId
+    const isCurrentSync = () => conversationHistorySyncRequestIdRef.current === syncRequestId
+
+    const { data: conversations, error } = await fetchConversations() as { data: ConversationItem[], error?: string }
+    if (error) { throw new Error(error) }
+
+    let latestConversations = conversations
+    let generateNameError: any
+    if (autoGenerateNameForId && conversations.some(item => item.id === autoGenerateNameForId)) {
+      try {
+        const generatedConversation: any = await generationConversationName(autoGenerateNameForId)
+        if (!isCurrentSync()) { return latestConversations }
+
+        latestConversations = produce(conversations, (draft) => {
+          const targetConversation = draft.find(item => item.id === autoGenerateNameForId)
+          if (targetConversation) { targetConversation.name = generatedConversation.name }
+        })
+      }
+      catch (error: any) {
+        generateNameError = error
+      }
+    }
+
+    if (!isCurrentSync()) { return latestConversations }
+
+    setConversationList(latestConversations)
+
+    if (generateNameError) { throw generateNameError }
+
+    return latestConversations
+  }
+
   const handleConversationSwitch = () => {
     if (!inited) { return }
 
@@ -174,8 +214,19 @@ const Main: FC<IMainProps> = () => {
   }
   useEffect(handleConversationSwitch, [currConversationId, inited])
 
-  const handleConversationIdChange = (id: string) => {
+  const handleConversationIdChange = async (id: string) => {
+    const idChangeRequestId = conversationIdChangeRequestIdRef.current + 1
+    conversationIdChangeRequestIdRef.current = idChangeRequestId
+    const isCurrentIdChange = () => conversationIdChangeRequestIdRef.current === idChangeRequestId
+
+    const shouldSyncStartedResponse = isResponding && hasStartedRespondingConversationRef.current
     if (isResponding) { cutOffCurrentResponse() }
+
+    if (shouldSyncStartedResponse) {
+      await syncStartedRespondingConversation()
+      resetRespondingConversationRefs()
+    }
+    if (!isCurrentIdChange()) { return }
 
     if (id === '-1') {
       const isResettingCurrentNewConversation = currConversationId === '-1'
@@ -212,7 +263,7 @@ const Main: FC<IMainProps> = () => {
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
   const createNewChat = (forceReset = false) => {
-    const newConversationItem = {
+    const newConversationItem: ConversationItem = {
       id: '-1',
       name: t('app.chat.newChatDefaultName'),
       inputs: newConversationInputs,
@@ -220,10 +271,9 @@ const Main: FC<IMainProps> = () => {
       suggested_questions: suggestedQuestions,
     }
 
-    // if new chat is already exist, do not create new chat
-    if (!forceReset && conversationList.some(item => item.id === '-1')) { return }
+    setConversationList(currentConversationList => produce(currentConversationList, (draft) => {
+      if (!forceReset && draft.some(item => item.id === '-1')) { return }
 
-    setConversationList(produce(conversationList, (draft) => {
       const existingNewConversationIndex = draft.findIndex(item => item.id === '-1')
 
       if (existingNewConversationIndex > -1) {
@@ -330,9 +380,38 @@ const Main: FC<IMainProps> = () => {
   const abortControllerRef = useRef<AbortController | null>(null)
   const sendRequestIdRef = useRef(0)
   const conversationSwitchRequestIdRef = useRef(0)
+  const conversationHistorySyncRequestIdRef = useRef(0)
+  const conversationIdChangeRequestIdRef = useRef(0)
+  const respondingConversationIdRef = useRef<string | null>(null)
+  const hasStartedRespondingConversationRef = useRef(false)
   const { notify } = Toast
   const logError = (message: string) => {
     notify({ type: 'error', message })
+  }
+
+  const markRespondingConversationStarted = (conversationId?: string) => {
+    hasStartedRespondingConversationRef.current = true
+    if (conversationId) { respondingConversationIdRef.current = conversationId }
+  }
+
+  const resetRespondingConversationRefs = () => {
+    respondingConversationIdRef.current = null
+    hasStartedRespondingConversationRef.current = false
+  }
+
+  const syncStartedRespondingConversation = async () => {
+    if (!hasStartedRespondingConversationRef.current) { return }
+
+    try {
+      await syncConversationHistory({
+        autoGenerateNameForId: getConversationIdChangeBecauseOfNew() ? respondingConversationIdRef.current : null,
+      })
+      setConversationIdChangeBecauseOfNew(false)
+      resetNewConversationInputs()
+    }
+    catch (error: any) {
+      notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
+    }
   }
 
   const handleDeleteConversation = async (id: string) => {
@@ -534,6 +613,9 @@ const Main: FC<IMainProps> = () => {
     sendRequestIdRef.current = requestId
     const isCurrentRequest = () => sendRequestIdRef.current === requestId
 
+    respondingConversationIdRef.current = isNewConversation ? null : currConversationId
+    hasStartedRespondingConversationRef.current = false
+
     setRespondingTrue()
     sendChatMessage(data, {
       getAbortController: (abortController) => {
@@ -546,6 +628,8 @@ const Main: FC<IMainProps> = () => {
       },
       onData: (message: string, isFirstMessage: boolean, { conversationId: newConversationId, messageId, taskId }: any) => {
         if (!isCurrentRequest()) { return }
+
+        if (message || messageId || newConversationId) { markRespondingConversationStarted(newConversationId || respondingConversationIdRef.current || undefined) }
 
         if (!isAgentMode) {
           responseItem.content = responseItem.content + message
@@ -580,6 +664,7 @@ const Main: FC<IMainProps> = () => {
         if (hasError) {
           abortControllerRef.current = null
           setRespondingFalse()
+          resetRespondingConversationRefs()
           setChatList(produce(getChatList(), (draft) => {
             const placeholderIndex = draft.findIndex(item => item.id === placeholderAnswerId)
             if (placeholderIndex > -1) { draft.splice(placeholderIndex, 1) }
@@ -587,28 +672,34 @@ const Main: FC<IMainProps> = () => {
           return
         }
 
-        if (getConversationIdChangeBecauseOfNew()) {
-          const { data: allConversations }: any = await fetchConversations()
-          if (!isCurrentRequest()) { return }
-
-          const newItem: any = await generationConversationName(allConversations[0].id)
-          if (!isCurrentRequest()) { return }
-
-          const newAllConversations = produce(allConversations, (draft: any) => {
-            draft[0].name = newItem.name
-          })
-          setConversationList(newAllConversations as any)
+        let syncedConversations: ConversationItem[] | undefined
+        try {
+          if (getConversationIdChangeBecauseOfNew()) {
+            syncedConversations = await syncConversationHistory({
+              autoGenerateNameForId: tempNewConversationId || respondingConversationIdRef.current,
+            })
+          }
         }
+        catch (error: any) {
+          notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
+        }
+        if (!isCurrentRequest()) { return }
+
+        const syncedConversationId = getConversationIdChangeBecauseOfNew() ? syncedConversations?.[0]?.id : undefined
+        const nextConversationId = tempNewConversationId || respondingConversationIdRef.current || syncedConversationId
         setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setChatNotStarted()
-        setCurrConversationId(tempNewConversationId, APP_ID, true)
+        if (nextConversationId) { setCurrConversationId(nextConversationId, APP_ID, true) }
         setRespondingFalse()
+        resetRespondingConversationRefs()
         abortControllerRef.current = null
         setMessageTaskId('')
       },
       onFile(file) {
         if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
 
         const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
         if (lastThought) { lastThought.message_files = [...(lastThought as any).message_files, { ...file }] }
@@ -622,6 +713,8 @@ const Main: FC<IMainProps> = () => {
       },
       onThought(thought) {
         if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
 
         isAgentMode = true
         const response = responseItem as any
@@ -661,6 +754,8 @@ const Main: FC<IMainProps> = () => {
       onMessageEnd: (messageEnd) => {
         if (!isCurrentRequest()) { return }
 
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
         if (messageEnd.metadata?.annotation_reply) {
           responseItem.id = messageEnd.id
           responseItem.annotation = ({
@@ -695,6 +790,8 @@ const Main: FC<IMainProps> = () => {
       onMessageReplace: (messageReplace) => {
         if (!isCurrentRequest()) { return }
 
+        markRespondingConversationStarted(messageReplace.conversation_id || respondingConversationIdRef.current || undefined)
+
         setChatList(produce(
           getChatList(),
           (draft) => {
@@ -712,16 +809,19 @@ const Main: FC<IMainProps> = () => {
         setRespondingFalse()
         if (code === 'aborted') { return }
 
+        resetRespondingConversationRefs()
+
         // role back placeholder answer
         setChatList(produce(getChatList(), (draft) => {
           const placeholderIndex = draft.findIndex(item => item.id === placeholderAnswerId)
           if (placeholderIndex > -1) { draft.splice(placeholderIndex, 1) }
         }))
       },
-      onWorkflowStarted: ({ workflow_run_id, task_id }) => {
+      onWorkflowStarted: ({ workflow_run_id }) => {
         if (!isCurrentRequest()) { return }
 
-        // taskIdRef.current = task_id
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
         responseItem.workflow_run_id = workflow_run_id
         responseItem.workflowProcess = {
           status: WorkflowRunningStatus.Running,
@@ -741,6 +841,8 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentRequest()) { return }
         if (!responseItem.workflowProcess) { return }
 
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
         responseItem.workflowProcess!.status = data.status as WorkflowRunningStatus
         setChatList(produce(getChatList(), (draft) => {
           const currentIndex = draft.findIndex(item => item.id === responseItem.id)
@@ -756,6 +858,8 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentRequest()) { return }
         if (!responseItem.workflowProcess?.tracing) { return }
 
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
         responseItem.workflowProcess!.tracing!.push(data as any)
         setChatList(produce(getChatList(), (draft) => {
           const currentIndex = draft.findIndex(item => item.id === responseItem.id)
@@ -770,6 +874,8 @@ const Main: FC<IMainProps> = () => {
       onNodeFinished: ({ data }) => {
         if (!isCurrentRequest()) { return }
         if (!responseItem.workflowProcess?.tracing) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
 
         const currentIndex = responseItem.workflowProcess!.tracing!.findIndex(item => item.node_id === data.node_id)
         if (currentIndex === -1) { return }
