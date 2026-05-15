@@ -156,6 +156,10 @@ const Main: FC<IMainProps> = () => {
     return latestConversations
   }
 
+  const getLastAnswerMessageId = (list: ChatItem[]) => {
+    return [...list].reverse().find(item => item.isAnswer && !item.feedbackDisabled)?.id || ''
+  }
+
   const handleConversationSwitch = () => {
     if (!inited) { return }
 
@@ -210,7 +214,22 @@ const Main: FC<IMainProps> = () => {
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
           })
         })
+        const lastAnswerMessageId = getLastAnswerMessageId(newChatList)
+        if (lastAnswerMessageId) {
+          const lastAnswer = newChatList.find(item => item.id === lastAnswerMessageId)
+          if (lastAnswer) { lastAnswer.suggestedQuestionsLoading = true }
+        }
         setChatList(newChatList)
+
+        if (lastAnswerMessageId) {
+          fetchSuggestedQuestions(lastAnswerMessageId)
+            .then((nextSuggestedQuestions) => {
+              if (isCurrentSwitch()) { applySuggestedQuestionsToAnswer(lastAnswerMessageId, nextSuggestedQuestions) }
+            })
+            .catch(() => {
+              if (isCurrentSwitch()) { applySuggestedQuestionsToAnswer(lastAnswerMessageId, []) }
+            })
+        }
       }).catch((error: any) => {
         if (!isCurrentSwitch()) { return }
 
@@ -583,16 +602,33 @@ const Main: FC<IMainProps> = () => {
     setChatList(newListWithAnswer)
   }
 
-  const applySuggestedQuestionsToAnswer = (messageId: string, questions: string[]) => {
-    if (!questions.length) { return }
-
+  const setSuggestedQuestionsLoading = (messageId: string) => {
     setChatList(produce(getChatList(), (draft) => {
       const current = draft.find(item => item.id === messageId)
       if (!current) { return }
 
       draft.forEach((item) => {
-        if (item.isAnswer) { item.suggestedQuestions = [] }
+        if (item.isAnswer) {
+          item.suggestedQuestions = []
+          item.suggestedQuestionsLoading = false
+        }
       })
+      current.suggestedQuestionsLoading = true
+    }))
+  }
+
+  const applySuggestedQuestionsToAnswer = (messageId: string, questions: string[]) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const current = draft.find(item => item.id === messageId)
+      if (!current) { return }
+
+      draft.forEach((item) => {
+        if (item.isAnswer && item.id !== messageId) {
+          item.suggestedQuestions = []
+          item.suggestedQuestionsLoading = false
+        }
+      })
+      current.suggestedQuestionsLoading = false
       current.suggestedQuestions = questions
     }))
   }
@@ -658,8 +694,8 @@ const Main: FC<IMainProps> = () => {
     }
 
     const currentChatList = getChatList().map(item =>
-      item.isAnswer && item.suggestedQuestions?.length
-        ? { ...item, suggestedQuestions: [] }
+      item.isAnswer && (item.suggestedQuestions?.length || item.suggestedQuestionsLoading)
+        ? { ...item, suggestedQuestions: [], suggestedQuestionsLoading: false }
         : item,
     )
     const newList = [...currentChatList, questionItem, placeholderAnswerItem]
@@ -742,6 +778,9 @@ const Main: FC<IMainProps> = () => {
           return
         }
 
+        const responseMessageId = hasSetResponseId ? responseItem.id : ''
+        if (responseMessageId) { setSuggestedQuestionsLoading(responseMessageId) }
+
         const shouldSyncNewConversation = getConversationIdChangeBecauseOfNew()
         let syncedConversations: ConversationItem[] | undefined
         let hasSyncedConversationHistory = !shouldSyncNewConversation
@@ -776,8 +815,6 @@ const Main: FC<IMainProps> = () => {
           if (shouldSyncNewConversation && hasSyncedConversationHistory) { skipNextConversationSwitchChatFetchRef.current = true }
           setCurrConversationId(nextConversationId, APP_ID, true)
         }
-        const responseMessageId = hasSetResponseId ? responseItem.id : ''
-
         setRespondingFalse()
         resetRespondingConversationRefs()
         abortControllerRef.current = null
@@ -789,6 +826,7 @@ const Main: FC<IMainProps> = () => {
             if (isCurrentRequest()) { applySuggestedQuestionsToAnswer(responseMessageId, nextSuggestedQuestions) }
           }
           catch {
+            if (isCurrentRequest()) { applySuggestedQuestionsToAnswer(responseMessageId, []) }
             // Suggested questions are optional; a failure here should not affect the completed answer.
           }
         }

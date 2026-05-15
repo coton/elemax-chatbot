@@ -6,7 +6,6 @@ import type { Emoji } from '@/types/tools'
 import { HandThumbDownIcon, HandThumbUpIcon } from '@heroicons/react/24/outline'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import Button from '@/app/components/base/button'
 import StreamdownMarkdown from '@/app/components/base/streamdown-markdown'
 import Tooltip from '@/app/components/base/tooltip'
 import WorkflowProcess from '@/app/components/workflow/workflow-process'
@@ -81,8 +80,9 @@ const Answer: FC<IAnswerProps> = ({
   allToolIcons,
   suggestionClick = () => { },
 }) => {
-  const { id, content, feedback, agent_thoughts, workflowProcess, suggestedQuestions = [] } = item
+  const { id, content, feedback, agent_thoughts, workflowProcess, suggestedQuestions = [], suggestedQuestionsLoading = false } = item
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
+  const showSuggestedQuestions = suggestedQuestionsLoading || suggestedQuestions.length > 0
 
   const { t } = useTranslation()
 
@@ -176,6 +176,40 @@ const Answer: FC<IAnswerProps> = ({
     </div>
   )
 
+  const renderSuggestedQuestions = () => {
+    if (!showSuggestedQuestions) { return null }
+
+    return (
+      <div className="mt-5 pl-12">
+        <div className="flex items-center gap-6">
+          <div className="h-px flex-1 bg-[#2b2d32]" />
+          <div className="shrink-0 text-[13px] font-semibold text-[#8c8f98]">TRY TO ASK</div>
+          <div className="h-px flex-1 bg-[#2b2d32]" />
+        </div>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {suggestedQuestionsLoading
+            ? [0, 1, 2].map(index => (
+              <div
+                key={index}
+                className="h-9 animate-pulse rounded-lg border border-[#474a50] bg-[#3a3c42]"
+                style={{ width: [120, 142, 112][index] }}
+              />
+            ))
+            : suggestedQuestions.map((suggestion, index) => (
+              <button
+                key={index}
+                type="button"
+                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-[#4b4e54] bg-[#3b3d42] px-4 py-2 text-base font-semibold leading-5 text-[#e1e3e8] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:border-[#5d6067] hover:bg-[#46494f] active:bg-[#34363b]"
+                onClick={() => suggestionClick(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div key={id}>
       <div className="flex items-start">
@@ -204,18 +238,6 @@ const Answer: FC<IAnswerProps> = ({
                   : (
                     <StreamdownMarkdown content={content} />
                   ))}
-              {suggestedQuestions.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs font-medium text-gray-400">Try to ask</div>
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {suggestedQuestions.map((suggestion, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <Button className="text-sm" type="link" onClick={() => suggestionClick(suggestion)}>{suggestion}</Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
             <div className="absolute top-[-14px] right-[-14px] flex flex-row justify-end gap-1">
               {!feedbackDisabled && !item.feedbackDisabled && renderItemOperation()}
@@ -225,6 +247,7 @@ const Answer: FC<IAnswerProps> = ({
           </div>
         </div>
       </div>
+      {renderSuggestedQuestions()}
     </div>
   )
 }
