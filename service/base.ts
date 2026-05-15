@@ -325,6 +325,10 @@ const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent, sil
           resolve(needAllResponseContent ? resClone : data)
         })
         .catch((err) => {
+          if ((err as { name?: string })?.name === 'AbortError') {
+            reject(err)
+            return
+          }
           if (!silent) { Toast.notify({ type: 'error', message: err }) }
           reject(err)
         })

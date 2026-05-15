@@ -183,7 +183,7 @@ const Answer: FC<IAnswerProps> = ({
       <div className="mt-5 pl-12">
         <div className="flex items-center gap-6">
           <div className="h-px flex-1 bg-[#2b2d32]" />
-          <div className="shrink-0 text-[13px] font-semibold text-[#8c8f98]">TRY TO ASK</div>
+          <div className="shrink-0 text-sm font-semibold text-[#8c8f98]">TRY TO ASK</div>
           <div className="h-px flex-1 bg-[#2b2d32]" />
         </div>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -199,7 +199,7 @@ const Answer: FC<IAnswerProps> = ({
               <button
                 key={index}
                 type="button"
-                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-[#4b4e54] bg-[#3b3d42] px-4 py-2 text-base font-semibold leading-5 text-[#e1e3e8] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:border-[#5d6067] hover:bg-[#46494f] active:bg-[#34363b]"
+                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-[#4b4e54] bg-[#3b3d42] px-4 py-2 text-sm font-semibold leading-5 text-[#e1e3e8] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:border-[#5d6067] hover:bg-[#46494f] active:bg-[#34363b]"
                 onClick={() => suggestionClick(suggestion)}
               >
                 {suggestion}

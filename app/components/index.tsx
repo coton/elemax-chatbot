@@ -160,7 +160,7 @@ const Main: FC<IMainProps> = () => {
     return [...list].reverse().find(item => item.isAnswer && !item.feedbackDisabled)?.id || ''
   }
 
-  const handleConversationSwitch = () => {
+  const handleConversationSwitch = (chatListAbortSignal: AbortSignal) => {
     if (!inited) { return }
 
     // update inputs of current conversation
@@ -191,7 +191,7 @@ const Main: FC<IMainProps> = () => {
 
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding && !shouldSkipChatFetch) {
       setIsConversationLoading(true)
-      fetchChatList(currConversationId).then((res: any) => {
+      fetchChatList(currConversationId, { signal: chatListAbortSignal }).then((res: any) => {
         if (!isCurrentSwitch()) { return }
 
         const { data } = res
@@ -232,6 +232,7 @@ const Main: FC<IMainProps> = () => {
         }
       }).catch((error: any) => {
         if (!isCurrentSwitch()) { return }
+        if (error?.name === 'AbortError' || chatListAbortSignal.aborted) { return }
 
         setChatList([])
         notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
@@ -246,7 +247,16 @@ const Main: FC<IMainProps> = () => {
 
     if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
   }
-  useEffect(handleConversationSwitch, [currConversationId, inited])
+
+  useEffect(() => {
+    const abortController = new AbortController()
+    handleConversationSwitch(abortController.signal)
+
+    return () => {
+      abortController.abort()
+      conversationSwitchRequestIdRef.current += 1
+    }
+  }, [currConversationId, inited])
 
   const handleConversationIdChange = async (id: string) => {
     const idChangeRequestId = conversationIdChangeRequestIdRef.current + 1

@@ -44,8 +44,13 @@ export const fetchConversations = async () => {
   return get('conversations', { params: { limit: 100, first_id: '' } })
 }
 
-export const fetchChatList = async (conversationId: string) => {
-  return get('messages', { params: { conversation_id: conversationId, limit: 20, last_id: '' } })
+export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal }) => {
+  const fetchOptions: Record<string, unknown> = {
+    params: { conversation_id: conversationId, limit: 20, last_id: '' },
+  }
+  if (options?.signal) { fetchOptions.signal = options.signal }
+
+  return get('messages', fetchOptions)
 }
 
 export const fetchSuggestedQuestions = async (messageId: string) => {
