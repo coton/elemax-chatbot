@@ -226,6 +226,7 @@ const Chat: FC<IChatProps> = ({
                   className={`
                     block w-full px-2 pr-[104px] py-[7px] leading-5 max-h-none bg-transparent text-base text-gray-100 outline-none appearance-none resize-none placeholder:text-gray-400
                   `}
+                  placeholder={t('app.chat.inputPlaceholder')}
                   value={query}
                   onChange={handleContentChange}
                   onKeyUp={handleKeyUp}

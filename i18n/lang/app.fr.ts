@@ -26,6 +26,7 @@ const translation = {
       'politique de confidentialité ',
     privacyPolicyRight:
       ' fournie par le développeur de l\'application.',
+    inputPlaceholder: 'Parlez à Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'La valeur des variables ne peut pas être vide',

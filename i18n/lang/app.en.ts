@@ -26,6 +26,7 @@ const translation = {
       'privacy policy',
     privacyPolicyRight:
       ' provided by the app developer.',
+    inputPlaceholder: 'Talk to Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'Variables value can not be empty',

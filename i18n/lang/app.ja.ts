@@ -26,6 +26,7 @@ const translation = {
       'プライバシーポリシー',
     privacyPolicyRight:
       ' をお読みください。',
+    inputPlaceholder: 'Max AI と話す',
   },
   errorMessage: {
     valueOfVarRequired: '変数の値は空にできません',

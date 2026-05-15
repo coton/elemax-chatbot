@@ -26,6 +26,7 @@ const translation = {
       'chính sách bảo mật',
     privacyPolicyRight:
       ' được cung cấp bởi nhà phát triển ứng dụng.',
+    inputPlaceholder: 'Trò chuyện với Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'Giá trị của biến không thể để trống',
