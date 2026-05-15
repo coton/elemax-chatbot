@@ -64,6 +64,7 @@ function useConversation() {
     currInputs,
     newConversationInputs,
     existConversationInputs,
+    setNewConversationInputs,
     resetNewConversationInputs,
     setCurrInputs,
     currConversationInfo,

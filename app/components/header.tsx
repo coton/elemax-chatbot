@@ -1,10 +1,11 @@
 import type { FC } from 'react'
 import React from 'react'
-import { Show, UserButton } from '@clerk/nextjs'
+import { Show } from '@clerk/nextjs'
 import {
   Bars3Icon,
   PencilSquareIcon,
 } from '@heroicons/react/24/solid'
+import CustomUserMenu from '@/app/components/header/custom-user-menu'
 export interface IHeaderProps {
   title: string
   isMobile?: boolean
@@ -44,7 +45,7 @@ const Header: FC<IHeaderProps> = ({
           </div>
         )}
         <Show when="signed-in">
-          <UserButton />
+          <CustomUserMenu />
         </Show>
       </div>
     </div>

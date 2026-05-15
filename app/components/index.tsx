@@ -10,7 +10,7 @@ import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
 import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
-import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, VisionFile, VisionSettings } from '@/types/app'
+import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, PromptVariable, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
 import Chat from '@/app/components/chat'
@@ -29,6 +29,22 @@ export interface IMainProps {
 
 interface ConversationHistorySyncOptions {
   autoGenerateNameForId?: string | null
+}
+
+interface StartNewConversationOptions {
+  forceReset?: boolean
+  inputs?: Record<string, any> | null
+  introduction?: string
+  suggestedQuestions?: string[]
+  promptVariables?: PromptVariable[]
+  showInHistory?: boolean
+}
+
+const getDefaultPromptInputs = (promptVariables: PromptVariable[] = []) => {
+  return promptVariables.reduce<Record<string, any>>((inputs, item) => {
+    if (item.default !== undefined) { inputs[item.key] = item.default }
+    return inputs
+  }, {})
 }
 
 const Main: FC<IMainProps> = () => {
@@ -82,6 +98,7 @@ const Main: FC<IMainProps> = () => {
     currConversationInfo,
     currInputs,
     newConversationInputs,
+    setNewConversationInputs,
     resetNewConversationInputs,
     setCurrInputs,
     setNewConversationInfo,
@@ -90,13 +107,9 @@ const Main: FC<IMainProps> = () => {
 
   const [conversationIdChangeBecauseOfNew, setConversationIdChangeBecauseOfNew, getConversationIdChangeBecauseOfNew] = useGetState(false)
   const [isChatStarted, { setTrue: setChatStarted, setFalse: setChatNotStarted }] = useBoolean(false)
+  const skipNextConversationSwitchChatFetchRef = useRef(false)
   const handleStartChat = (inputs: Record<string, any>) => {
-    createNewChat()
-    setConversationIdChangeBecauseOfNew(true)
-    setCurrInputs(inputs)
-    setChatStarted()
-    // parse variables in introduction
-    setChatList(generateNewChatListWithOpenStatement('', inputs))
+    startNewConversation({ inputs })
   }
   const hasSetInputs = (() => {
     if (!isNewConversation) { return true }
@@ -171,7 +184,9 @@ const Main: FC<IMainProps> = () => {
     conversationSwitchRequestIdRef.current = switchRequestId
     const isCurrentSwitch = () => conversationSwitchRequestIdRef.current === switchRequestId
 
-    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding) {
+    const shouldSkipChatFetch = skipNextConversationSwitchChatFetchRef.current
+
+    if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding && !shouldSkipChatFetch) {
       setIsConversationLoading(true)
       fetchChatList(currConversationId).then((res: any) => {
         if (!isCurrentSwitch()) { return }
@@ -209,6 +224,7 @@ const Main: FC<IMainProps> = () => {
     else {
       setIsConversationLoading(false)
     }
+    if (shouldSkipChatFetch) { skipNextConversationSwitchChatFetchRef.current = false }
 
     if (isNewConversation && isChatStarted) { setChatList(generateNewChatListWithOpenStatement()) }
   }
@@ -230,11 +246,8 @@ const Main: FC<IMainProps> = () => {
 
     if (id === '-1') {
       const isResettingCurrentNewConversation = currConversationId === '-1'
-      createNewChat(isResettingCurrentNewConversation)
-      setConversationIdChangeBecauseOfNew(true)
-      setChatNotStarted()
-
-      if (isResettingCurrentNewConversation) { setChatList([]) }
+      startNewConversation({ forceReset: isResettingCurrentNewConversation })
+      clearConversationIdFromStorage(APP_ID)
     }
     else {
       setConversationIdChangeBecauseOfNew(false)
@@ -262,13 +275,13 @@ const Main: FC<IMainProps> = () => {
   }, [chatList, currConversationId])
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
-  const createNewChat = (forceReset = false) => {
+  const createNewChat = (forceReset = false, options: StartNewConversationOptions = {}) => {
     const newConversationItem: ConversationItem = {
       id: '-1',
       name: t('app.chat.newChatDefaultName'),
-      inputs: newConversationInputs,
-      introduction: conversationIntroduction,
-      suggested_questions: suggestedQuestions,
+      inputs: options.inputs ?? newConversationInputs,
+      introduction: options.introduction ?? conversationIntroduction,
+      suggested_questions: options.suggestedQuestions ?? suggestedQuestions,
     }
 
     setConversationList(currentConversationList => produce(currentConversationList, (draft) => {
@@ -286,10 +299,14 @@ const Main: FC<IMainProps> = () => {
   }
 
   // sometime introduction is not applied to state
-  const generateNewChatListWithOpenStatement = (introduction?: string, inputs?: Record<string, any> | null) => {
+  const generateNewChatListWithOpenStatement = (
+    introduction?: string,
+    inputs?: Record<string, any> | null,
+    promptVariables: PromptVariable[] = promptConfig?.prompt_variables || [],
+  ) => {
     let calculatedIntroduction = introduction || conversationIntroduction || ''
     const calculatedPromptVariables = inputs || currInputs || null
-    if (calculatedIntroduction && calculatedPromptVariables) { calculatedIntroduction = replaceVarWithValues(calculatedIntroduction, promptConfig?.prompt_variables || [], calculatedPromptVariables) }
+    if (calculatedIntroduction && calculatedPromptVariables) { calculatedIntroduction = replaceVarWithValues(calculatedIntroduction, promptVariables, calculatedPromptVariables) }
 
     const openStatement = {
       id: `${Date.now()}`,
@@ -302,6 +319,27 @@ const Main: FC<IMainProps> = () => {
     if (calculatedIntroduction) { return [openStatement] }
 
     return []
+  }
+
+  const startNewConversation = ({
+    forceReset = false,
+    inputs = getDefaultPromptInputs(promptConfig?.prompt_variables || []),
+    introduction = conversationIntroduction,
+    suggestedQuestions: nextSuggestedQuestions = suggestedQuestions,
+    promptVariables = promptConfig?.prompt_variables || [],
+    showInHistory = true,
+  }: StartNewConversationOptions = {}) => {
+    setNewConversationInputs(inputs)
+    if (showInHistory) {
+      createNewChat(forceReset, {
+        inputs,
+        introduction,
+        suggestedQuestions: nextSuggestedQuestions,
+      })
+    }
+    setConversationIdChangeBecauseOfNew(true)
+    setChatStarted()
+    setChatList(generateNewChatListWithOpenStatement(introduction, inputs, promptVariables))
   }
 
   // init
@@ -340,6 +378,8 @@ const Main: FC<IMainProps> = () => {
           })
         }
         const prompt_variables = userInputsFormToPromptVariables(user_input_form)
+        const defaultInputs = getDefaultPromptInputs(prompt_variables)
+        setNewConversationInputs(defaultInputs)
         setPromptConfig({
           prompt_template: promptTemplate,
           prompt_variables,
@@ -361,6 +401,14 @@ const Main: FC<IMainProps> = () => {
         setConversationList(conversations as ConversationItem[])
 
         if (isNotNewConversation) { setCurrConversationId(_conversationId, APP_ID, false) }
+        else if (conversations.length === 0) {
+          startNewConversation({
+            inputs: defaultInputs,
+            introduction,
+            suggestedQuestions,
+            promptVariables: prompt_variables,
+          })
+        }
 
         setInited(true)
       }
@@ -430,6 +478,7 @@ const Main: FC<IMainProps> = () => {
     const deletedConversation = previousConversationList[deletedConversationIndex]
     const nextConversationList = previousConversationList.filter(item => item.id !== id)
     const isDeletingCurrentConversation = id === currConversationId
+    const isDeletingLastConversation = nextConversationList.length === 0
     const nextConversationId = nextConversationList[0]?.id || '-1'
 
     setConversationList(nextConversationList)
@@ -444,7 +493,7 @@ const Main: FC<IMainProps> = () => {
       else {
         clearConversationIdFromStorage(APP_ID)
         setCurrConversationId('-1', APP_ID, false)
-        setChatList([])
+        startNewConversation({ forceReset: true })
       }
     }
 
@@ -458,7 +507,9 @@ const Main: FC<IMainProps> = () => {
         setConversationList((currentConversationList) => {
           if (currentConversationList.some(item => item.id === id)) { return currentConversationList }
 
-          const restoredConversationList = [...currentConversationList]
+          const restoredConversationList = isDeletingLastConversation
+            ? currentConversationList.filter(item => item.id !== '-1')
+            : [...currentConversationList]
           restoredConversationList.splice(
             Math.min(deletedConversationIndex, restoredConversationList.length),
             0,
@@ -468,7 +519,10 @@ const Main: FC<IMainProps> = () => {
         })
       }
 
-      if (isDeletingCurrentConversation && getCurrConversationId() === nextConversationId) { setCurrConversationId(id, APP_ID) }
+      if (isDeletingCurrentConversation && getCurrConversationId() === nextConversationId) {
+        setConversationIdChangeBecauseOfNew(false)
+        setCurrConversationId(id, APP_ID)
+      }
 
       notify({ type: 'error', message: error?.message || t('app.chat.deleteConversationFailed') })
     }
@@ -672,25 +726,40 @@ const Main: FC<IMainProps> = () => {
           return
         }
 
+        const shouldSyncNewConversation = getConversationIdChangeBecauseOfNew()
         let syncedConversations: ConversationItem[] | undefined
+        let hasSyncedConversationHistory = !shouldSyncNewConversation
         try {
-          if (getConversationIdChangeBecauseOfNew()) {
+          if (shouldSyncNewConversation) {
             syncedConversations = await syncConversationHistory({
               autoGenerateNameForId: tempNewConversationId || respondingConversationIdRef.current,
             })
+            hasSyncedConversationHistory = true
           }
         }
         catch (error: any) {
+          hasSyncedConversationHistory = false
           notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
         }
         if (!isCurrentRequest()) { return }
 
-        const syncedConversationId = getConversationIdChangeBecauseOfNew() ? syncedConversations?.[0]?.id : undefined
+        const syncedConversationId = shouldSyncNewConversation ? syncedConversations?.[0]?.id : undefined
         const nextConversationId = tempNewConversationId || respondingConversationIdRef.current || syncedConversationId
+        const nextConversation = syncedConversations?.find(item => item.id === nextConversationId)
         setConversationIdChangeBecauseOfNew(false)
         resetNewConversationInputs()
         setChatNotStarted()
-        if (nextConversationId) { setCurrConversationId(nextConversationId, APP_ID, true) }
+        if (nextConversation) {
+          setExistConversationInfo({
+            name: nextConversation.name || t('app.chat.newChatDefaultName'),
+            introduction: nextConversation.introduction || conversationIntroduction,
+            suggested_questions: nextConversation.suggested_questions || suggestedQuestions,
+          })
+        }
+        if (nextConversationId) {
+          if (shouldSyncNewConversation && hasSyncedConversationHistory) { skipNextConversationSwitchChatFetchRef.current = true }
+          setCurrConversationId(nextConversationId, APP_ID, true)
+        }
         setRespondingFalse()
         resetRespondingConversationRefs()
         abortControllerRef.current = null
@@ -917,7 +986,6 @@ const Main: FC<IMainProps> = () => {
         onCurrentIdChange={handleConversationIdChange}
         onDeleteConversation={handleDeleteConversation}
         currentId={currConversationId}
-        copyRight={APP_INFO.copyright || APP_INFO.title}
       />
     )
   }

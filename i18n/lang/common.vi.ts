@@ -18,6 +18,12 @@ const translation = {
     dislike: 'không thích',
     ok: 'OK',
   },
+  account: {
+    userMenu: 'Menu người dùng',
+    manageAccount: 'Quản lý tài khoản',
+    signOut: 'Đăng xuất',
+    signingOut: 'Đang đăng xuất...',
+  },
   imageUploader: {
     uploadFromComputer: 'Tải lên từ máy tính',
     uploadFromComputerReadError: 'Đọc ảnh thất bại, vui lòng thử lại.',

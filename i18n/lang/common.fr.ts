@@ -18,6 +18,12 @@ const translation = {
     dislike: 'dislike',
     ok: 'D\'accord',
   },
+  account: {
+    userMenu: 'Menu utilisateur',
+    manageAccount: 'Gérer le compte',
+    signOut: 'Se déconnecter',
+    signingOut: 'Déconnexion...',
+  },
   imageUploader: {
     uploadFromComputer: 'Télécharger depuis l\'ordinateur',
     uploadFromComputerReadError: 'Édition de l\'image échouée, veuillez essayer à nouveau.',

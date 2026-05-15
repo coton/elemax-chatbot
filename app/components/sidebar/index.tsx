@@ -18,7 +18,6 @@ function classNames(...classes: any[]) {
 const MAX_CONVERSATION_LENTH = 20
 
 export interface ISidebarProps {
-  copyRight: string
   currentId: string
   onCurrentIdChange: (id: string) => void
   onDeleteConversation: (id: string) => void
@@ -26,7 +25,6 @@ export interface ISidebarProps {
 }
 
 const Sidebar: FC<ISidebarProps> = ({
-  copyRight,
   currentId,
   onCurrentIdChange,
   onDeleteConversation,
@@ -95,8 +93,11 @@ const Sidebar: FC<ISidebarProps> = ({
       {/* <a className="flex flex-shrink-0 p-4" href="https://langgenius.ai/" target="_blank">
         <Card><div className="flex flex-row items-center"><ChatBubbleOvalLeftEllipsisSolidIcon className="text-primary-600 h-6 w-6 mr-2" /><span>LangGenius</span></div></Card>
       </a> */}
-      <div className="flex flex-shrink-0 pr-4 pb-4 pl-4">
-        <div className="text-gray-400 font-normal text-xs">© {copyRight} {(new Date()).getFullYear()}</div>
+      <div className="flex flex-shrink-0 items-center justify-center p-4">
+        <div className="flex items-center gap-2 text-xs font-normal text-gray-400">
+          <span>POWERED BY</span>
+          <img src="/logo-32x32.png" alt="Powered by logo" className="h-5 w-5" />
+        </div>
       </div>
     </div>
   )

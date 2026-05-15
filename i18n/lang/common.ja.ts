@@ -18,6 +18,12 @@ const translation = {
     dislike: 'よくないね',
     ok: 'OK',
   },
+  account: {
+    userMenu: 'ユーザーメニュー',
+    manageAccount: 'アカウント管理',
+    signOut: 'ログアウト',
+    signingOut: 'ログアウト中...',
+  },
   imageUploader: {
     uploadFromComputer: 'コンピューターからアップロード',
     uploadFromComputerReadError: '画像の読み込みに失敗しました。もう一度お試しください。',
