@@ -189,7 +189,7 @@ const Answer: FC<IAnswerProps> = ({
         </div>
         <div className={`${s.answerWrap} max-w-[calc(100%-3rem)]`}>
           <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl ${workflowProcess && 'min-w-[480px]'}`}>
+            <div className={`ml-2 py-3 px-4 bg-[#27282d] text-gray-100 rounded-tr-2xl rounded-b-2xl ${workflowProcess && 'min-w-[480px]'}`}>
               {workflowProcess && (
                 <WorkflowProcess data={workflowProcess} hideInfo />
               )}
@@ -206,6 +206,7 @@ const Answer: FC<IAnswerProps> = ({
                   ))}
               {suggestedQuestions.length > 0 && (
                 <div className="mt-3">
+                  <div className="text-xs font-medium text-gray-400">Try to ask</div>
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {suggestedQuestions.map((suggestion, index) => (
                       <div key={index} className="flex items-center gap-1">

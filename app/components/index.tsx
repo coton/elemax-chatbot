@@ -9,7 +9,7 @@ import Toast from '@/app/components/base/toast'
 import Sidebar from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, fetchSuggestedQuestions, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, PromptVariable, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -92,7 +92,6 @@ const Main: FC<IMainProps> = () => {
     currConversationId,
     getCurrConversationId,
     setCurrConversationId,
-    getConversationIdFromStorage,
     clearConversationIdFromStorage,
     isNewConversation,
     currConversationInfo,
@@ -358,9 +357,7 @@ const Main: FC<IMainProps> = () => {
           throw new Error(error)
           return
         }
-        const _conversationId = getConversationIdFromStorage(APP_ID)
-        const currentConversation = conversations.find(item => item.id === _conversationId)
-        const isNotNewConversation = !!currentConversation
+        const firstConversation = conversations[0]
 
         // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
@@ -370,11 +367,11 @@ const Main: FC<IMainProps> = () => {
           introduction,
           suggested_questions,
         })
-        if (isNotNewConversation) {
+        if (firstConversation) {
           setExistConversationInfo({
-            name: currentConversation.name || t('app.chat.newChatDefaultName'),
-            introduction,
-            suggested_questions,
+            name: firstConversation.name || t('app.chat.newChatDefaultName'),
+            introduction: firstConversation.introduction || introduction,
+            suggested_questions: firstConversation.suggested_questions || suggested_questions,
           })
         }
         const prompt_variables = userInputsFormToPromptVariables(user_input_form)
@@ -400,7 +397,7 @@ const Main: FC<IMainProps> = () => {
         })
         setConversationList(conversations as ConversationItem[])
 
-        if (isNotNewConversation) { setCurrConversationId(_conversationId, APP_ID, false) }
+        if (firstConversation) { setCurrConversationId(firstConversation.id, APP_ID) }
         else if (conversations.length === 0) {
           startNewConversation({
             inputs: defaultInputs,
@@ -586,6 +583,20 @@ const Main: FC<IMainProps> = () => {
     setChatList(newListWithAnswer)
   }
 
+  const applySuggestedQuestionsToAnswer = (messageId: string, questions: string[]) => {
+    if (!questions.length) { return }
+
+    setChatList(produce(getChatList(), (draft) => {
+      const current = draft.find(item => item.id === messageId)
+      if (!current) { return }
+
+      draft.forEach((item) => {
+        if (item.isAnswer) { item.suggestedQuestions = [] }
+      })
+      current.suggestedQuestions = questions
+    }))
+  }
+
   const transformToServerFile = (fileItem: any) => {
     return {
       type: 'image',
@@ -646,7 +657,12 @@ const Main: FC<IMainProps> = () => {
       isAnswer: true,
     }
 
-    const newList = [...getChatList(), questionItem, placeholderAnswerItem]
+    const currentChatList = getChatList().map(item =>
+      item.isAnswer && item.suggestedQuestions?.length
+        ? { ...item, suggestedQuestions: [] }
+        : item,
+    )
+    const newList = [...currentChatList, questionItem, placeholderAnswerItem]
     setChatList(newList)
 
     let isAgentMode = false
@@ -760,10 +776,22 @@ const Main: FC<IMainProps> = () => {
           if (shouldSyncNewConversation && hasSyncedConversationHistory) { skipNextConversationSwitchChatFetchRef.current = true }
           setCurrConversationId(nextConversationId, APP_ID, true)
         }
+        const responseMessageId = hasSetResponseId ? responseItem.id : ''
+
         setRespondingFalse()
         resetRespondingConversationRefs()
         abortControllerRef.current = null
         setMessageTaskId('')
+
+        if (responseMessageId) {
+          try {
+            const nextSuggestedQuestions = await fetchSuggestedQuestions(responseMessageId)
+            if (isCurrentRequest()) { applySuggestedQuestionsToAnswer(responseMessageId, nextSuggestedQuestions) }
+          }
+          catch {
+            // Suggested questions are optional; a failure here should not affect the completed answer.
+          }
+        }
       },
       onFile(file) {
         if (!isCurrentRequest()) { return }
@@ -824,6 +852,11 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentRequest()) { return }
 
         markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        if (messageEnd.id && !hasSetResponseId) {
+          responseItem.id = messageEnd.id
+          hasSetResponseId = true
+        }
 
         if (messageEnd.metadata?.annotation_reply) {
           responseItem.id = messageEnd.id

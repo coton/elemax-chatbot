@@ -8,6 +8,24 @@
   cursor: pointer;
 }
 
+.itemLoading {
+  width: 320px;
+  height: 320px;
+  max-width: 100%;
+  background:
+    linear-gradient(90deg, transparent, rgb(255 255 255 / 8%), transparent),
+    linear-gradient(135deg, #2f3442 0%, #262b36 100%);
+  background-size: 200% 100%, 100% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+.itemFailed {
+  cursor: default;
+  background:
+    linear-gradient(135deg, #343946 0%, #2a2f3b 100%),
+    rgb(255 255 255 / 4%);
+}
+
 .item:nth-child(3n) {
   margin-right: 0;
 }
@@ -19,4 +37,10 @@
 
 .img-4 .item:nth-child(3n) {
   margin-right: 8px;
+}
+
+@keyframes shimmer {
+  100% {
+    background-position: -200% 0, 0 0;
+  }
 }

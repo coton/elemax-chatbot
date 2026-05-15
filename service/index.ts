@@ -48,6 +48,16 @@ export const fetchChatList = async (conversationId: string) => {
   return get('messages', { params: { conversation_id: conversationId, limit: 20, last_id: '' } })
 }
 
+export const fetchSuggestedQuestions = async (messageId: string) => {
+  const res = await get(`messages/${messageId}/suggested`, {}, { silent: true }) as { data?: unknown }
+  if (!Array.isArray(res?.data)) { return [] }
+
+  return res.data
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map(item => item.trim())
+    .slice(0, 3)
+}
+
 // init value. wait for server update
 export const fetchAppParams = async () => {
   return get('parameters')

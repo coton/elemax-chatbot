@@ -9,16 +9,17 @@ import ImageGallery from '@/app/components/base/image-gallery'
 
 type IQuestionProps = Pick<IChatItem, 'id' | 'content' | 'useCurrentUserAvatar'> & {
   imgSrcs?: string[]
+  userAvatarInitial?: string
+  userAvatarUrl?: string
 }
 
-const Question: FC<IQuestionProps> = ({ id, content, useCurrentUserAvatar, imgSrcs }) => {
-  const userName = ''
+const Question: FC<IQuestionProps> = ({ id, content, userAvatarInitial = 'U', userAvatarUrl, imgSrcs }) => {
   return (
     <div className='flex items-start justify-end' key={id}>
       <div>
         <div className={`${s.question} relative text-sm text-gray-900`}>
           <div
-            className={'mr-2 py-3 px-4 bg-blue-500 rounded-tl-2xl rounded-b-2xl'}
+            className={'mr-2 py-3 px-4 bg-[#262c4a] text-gray-100 rounded-tl-2xl rounded-b-2xl'}
           >
             {imgSrcs && imgSrcs.length > 0 && (
               <ImageGallery srcs={imgSrcs} />
@@ -27,15 +28,17 @@ const Question: FC<IQuestionProps> = ({ id, content, useCurrentUserAvatar, imgSr
           </div>
         </div>
       </div>
-      {useCurrentUserAvatar
-        ? (
-          <div className='w-10 h-10 shrink-0 leading-10 text-center mr-2 rounded-full bg-primary-600 text-white'>
-            {userName?.[0].toLocaleUpperCase()}
-          </div>
-        )
-        : (
-          <div className={`${s.questionIcon} w-10 h-10 shrink-0 `}></div>
-        )}
+      <div className='w-10 h-10 shrink-0 mr-2 overflow-hidden rounded-full bg-[#262c4a] text-center leading-10 text-sm font-semibold text-white'>
+        {userAvatarUrl
+          ? (
+            <img
+              src={userAvatarUrl}
+              alt=''
+              className='h-full w-full object-cover'
+            />
+          )
+          : userAvatarInitial}
+      </div>
     </div>
   )
 }

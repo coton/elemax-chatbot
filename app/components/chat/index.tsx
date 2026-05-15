@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react'
 import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
 import Textarea from 'rc-textarea'
+import { useUser } from '@clerk/nextjs'
 import s from './style.module.css'
 import Answer from './answer'
 import Question from './question'
@@ -53,8 +54,13 @@ const Chat: FC<IChatProps> = ({
   fileConfig,
 }) => {
   const { t } = useTranslation()
+  const { user } = useUser()
   const { notify } = Toast
   const isUseInputMethod = useRef(false)
+  const userEmail = user?.primaryEmailAddress?.emailAddress || ''
+  const userDisplayName = user?.fullName || user?.username || userEmail
+  const userAvatarInitial = (userDisplayName || 'U').trim().charAt(0).toUpperCase()
+  const userAvatarUrl = user?.hasImage ? user.imageUrl : ''
 
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
@@ -95,6 +101,17 @@ const Chat: FC<IChatProps> = ({
   } = useImageFiles()
 
   const [attachmentFiles, setAttachmentFiles] = React.useState<FileEntity[]>([])
+  const attachmentFileConfig = React.useMemo(() => {
+    if (!fileConfig?.enabled) { return undefined }
+
+    const allowedFileUploadMethods = fileConfig.allowed_file_upload_methods?.filter(method => method !== TransferMethod.local_file) ?? []
+    if (!allowedFileUploadMethods.length) { return undefined }
+
+    return {
+      ...fileConfig,
+      allowed_file_upload_methods: allowedFileUploadMethods,
+    }
+  }, [fileConfig])
 
   const handleSend = () => {
     if (!valid() || (checkCanSend && !checkCanSend())) { return }
@@ -169,6 +186,8 @@ const Chat: FC<IChatProps> = ({
               id={item.id}
               content={item.content}
               useCurrentUserAvatar={useCurrentUserAvatar}
+              userAvatarInitial={userAvatarInitial}
+              userAvatarUrl={userAvatarUrl}
               imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
             />
           )
@@ -176,20 +195,12 @@ const Chat: FC<IChatProps> = ({
       </div>
       {
         !isHideSendInput && (
-          <div className='fixed z-10 bottom-0 left-1/2 transform -translate-x-1/2 pc:ml-[122px] tablet:ml-[96px] mobile:ml-0 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5'>
-            <div className='p-[5.5px] max-h-[150px] bg-white border-[1.5px] border-gray-200 rounded-xl overflow-y-auto'>
-              {
-                visionConfig?.enabled && (
-                  <>
-                    <div className='absolute bottom-2 left-2 flex items-center'>
-                      <ChatImageUploader
-                        settings={visionConfig}
-                        onUpload={onUpload}
-                        disabled={files.length >= visionConfig.number_limits}
-                      />
-                      <div className='mx-1 w-[1px] h-4 bg-black/5' />
-                    </div>
-                    <div className='pl-[52px]'>
+          <div className='fixed z-10 bottom-4 left-1/2 transform -translate-x-1/2 pc:ml-[122px] tablet:ml-[96px] mobile:ml-0 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5'>
+            <div className='relative p-[5.5px] bg-[#27282d] border-[1.5px] border-[#3a3b40] rounded-xl'>
+              <div className='max-h-[150px] overflow-y-auto'>
+                {
+                  visionConfig?.enabled && files.length > 0 && (
+                    <div className='mb-1'>
                       <ImageList
                         list={files}
                         onRemove={onRemove}
@@ -198,33 +209,40 @@ const Chat: FC<IChatProps> = ({
                         onImageLinkLoadError={onImageLinkLoadError}
                       />
                     </div>
-                  </>
-                )
-              }
-              {
-                fileConfig?.enabled && (
-                  <div className={`${visionConfig?.enabled ? 'pl-[52px]' : ''} mb-1`}>
-                    <FileUploaderInAttachmentWrapper
-                      fileConfig={fileConfig}
-                      value={attachmentFiles}
-                      onChange={setAttachmentFiles}
+                  )
+                }
+                {
+                  attachmentFileConfig?.enabled && (
+                    <div className='mb-1'>
+                      <FileUploaderInAttachmentWrapper
+                        fileConfig={attachmentFileConfig}
+                        value={attachmentFiles}
+                        onChange={setAttachmentFiles}
+                      />
+                    </div>
+                  )
+                }
+                <Textarea
+                  className={`
+                    block w-full px-2 pr-[104px] py-[7px] leading-5 max-h-none bg-transparent text-base text-gray-100 outline-none appearance-none resize-none placeholder:text-gray-400
+                  `}
+                  value={query}
+                  onChange={handleContentChange}
+                  onKeyUp={handleKeyUp}
+                  onKeyDown={handleKeyDown}
+                  autoSize
+                />
+              </div>
+              <div className="absolute bottom-2 right-6 flex items-center gap-2 h-8">
+                {
+                  visionConfig?.enabled && (
+                    <ChatImageUploader
+                      settings={visionConfig}
+                      onUpload={onUpload}
+                      disabled={files.length >= visionConfig.number_limits}
                     />
-                  </div>
-                )
-              }
-              <Textarea
-                className={`
-                  block w-full px-2 pr-[118px] py-[7px] leading-5 max-h-none text-base text-gray-700 outline-none appearance-none resize-none
-                  ${visionConfig?.enabled && 'pl-12'}
-                `}
-                value={query}
-                onChange={handleContentChange}
-                onKeyUp={handleKeyUp}
-                onKeyDown={handleKeyDown}
-                autoSize
-              />
-              <div className="absolute bottom-2 right-6 flex items-center h-8">
-                <div className={`${s.count} mr-3 h-5 leading-5 text-sm bg-gray-50 text-gray-500 px-2 rounded`}>{query.trim().length}</div>
+                  )
+                }
                 <Tooltip
                   selector='send-tip'
                   htmlContent={

@@ -1,5 +1,5 @@
 'use client'
-import type { FC } from 'react'
+import type { CSSProperties, FC } from 'react'
 import React, { useState } from 'react'
 import cn from 'classnames'
 import s from './style.module.css'
@@ -9,7 +9,7 @@ interface Props {
   srcs: string[]
 }
 
-const getWidthStyle = (imgNum: number) => {
+const getWidthStyle = (imgNum: number): CSSProperties => {
   if (imgNum === 1) {
     return {
       maxWidth: '100%',
@@ -27,6 +27,36 @@ const getWidthStyle = (imgNum: number) => {
   }
 }
 
+const GalleryImage: FC<{
+  src: string
+  style: CSSProperties
+  onPreview: () => void
+}> = ({
+  src,
+  style,
+  onPreview,
+}) => {
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  return (
+    <img
+      className={cn(s.item, !loaded && s.itemLoading, failed && s.itemFailed)}
+      style={loaded ? style : undefined}
+      src={src}
+      alt=''
+      onLoad={() => setLoaded(true)}
+      onError={(e) => {
+        setFailed(true)
+        e.currentTarget.removeAttribute('src')
+      }}
+      onClick={() => {
+        if (loaded && !failed) { onPreview() }
+      }}
+    />
+  )
+}
+
 const ImageGallery: FC<Props> = ({
   srcs,
 }) => {
@@ -41,13 +71,11 @@ const ImageGallery: FC<Props> = ({
   return (
     <div className={cn(s[`img-${imgNum}`], 'flex flex-wrap')}>
       {validSrcs.map((src, index) => (
-        <img
+        <GalleryImage
           key={index}
-          className={s.item}
-          style={imgStyle}
           src={src}
-          alt=''
-          onClick={() => setImagePreviewUrl(src)}
+          style={imgStyle}
+          onPreview={() => setImagePreviewUrl(src)}
         />
       ))}
       {
