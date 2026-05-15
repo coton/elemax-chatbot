@@ -11,9 +11,21 @@
     "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
     "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
 
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 229, 231, 235;
+  --background-start-rgb: 10, 15, 25;
+  --background-end-rgb: 15, 23, 42;
+  --dark-bg: #0a0f19;
+  --dark-bg-soft: #0f172a;
+  --dark-surface: #111827;
+  --dark-surface-elevated: #172033;
+  --dark-surface-hover: #1f2937;
+  --dark-border: #263244;
+  --dark-border-strong: #334155;
+  --dark-text: #e5e7eb;
+  --dark-text-muted: #9ca3af;
+  --dark-text-subtle: #64748b;
+  --dark-primary: #3b82f6;
+  --dark-primary-soft: #1e3a8a;
 
   --primary-glow: conic-gradient(from 180deg at 50% 50%,
       #16abff33 0deg,
@@ -81,8 +93,14 @@ body {
   overflow-x: hidden;
 }
 
+html {
+  color-scheme: dark;
+  background: var(--dark-bg);
+}
+
 body {
   color: rgb(var(--foreground-rgb));
+  background: var(--dark-bg);
   /* background: linear-gradient(
       to bottom,
       transparent,
@@ -107,13 +125,13 @@ a {
   padding-bottom: 1.5rem;
   line-height: 1.5;
   font-size: 1.125rem;
-  color: #111928;
+  color: var(--dark-text);
 }
 
 .h2 {
   font-size: 14px;
   font-weight: 500;
-  color: #111928;
+  color: var(--dark-text);
   line-height: 1.5;
 }
 
@@ -127,4 +145,113 @@ a {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   text-fill-color: transparent;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+  color: #f8fafc;
+}
+
+input,
+textarea,
+select {
+  color: var(--dark-text);
+  background-color: var(--dark-surface);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--dark-text-subtle);
+}
+
+:where(.bg-white) {
+  background-color: var(--dark-surface) !important;
+}
+
+:where(.bg-gray-50, .bg-gray-100) {
+  background-color: var(--dark-bg-soft) !important;
+}
+
+:where(.bg-gray-200) {
+  background-color: var(--dark-surface-hover) !important;
+}
+
+:where(.bg-blue-500) {
+  background-color: #1d4ed8 !important;
+}
+
+:where(.bg-primary-50, .bg-primary-100, .bg-primary-200) {
+  background-color: rgba(37, 99, 235, 0.22) !important;
+}
+
+:where(.bg-red-50, .bg-red-100) {
+  background-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+:where(.bg-green-50, .bg-green-100) {
+  background-color: rgba(22, 163, 74, 0.18) !important;
+}
+
+:where(.bg-yellow-100) {
+  background-color: rgba(202, 138, 4, 0.2) !important;
+}
+
+:where(.hover\:bg-white:hover, .hover\:bg-gray-50:hover, .hover\:bg-gray-100:hover, .hover\:bg-gray-200:hover),
+:where(.group:hover .group-hover\:bg-gray-100, .group:hover .group-hover\:bg-gray-200) {
+  background-color: var(--dark-surface-hover) !important;
+}
+
+:where(.focus-visible\:bg-gray-200:focus-visible) {
+  background-color: var(--dark-surface-hover) !important;
+}
+
+:where(.text-gray-900, .text-gray-800, .text-gray-700) {
+  color: var(--dark-text) !important;
+}
+
+:where(.text-gray-500, .text-gray-400) {
+  color: var(--dark-text-muted) !important;
+}
+
+:where(.text-gray-300, .text-gray-200) {
+  color: var(--dark-text-subtle) !important;
+}
+
+:where(.text-blue-600, .text-primary-600) {
+  color: #60a5fa !important;
+}
+
+:where(.border-gray-100, .border-gray-200, .border-gray-300, .border-black\/5, .border-black\/\[0\.02\], .border-black\/\[0\.08\]) {
+  border-color: var(--dark-border) !important;
+}
+
+:where(.divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.divide-gray-200 > :not([hidden]) ~ :not([hidden])) {
+  border-color: var(--dark-border) !important;
+}
+
+:where(.ring-gray-300) {
+  --tw-ring-color: var(--dark-border-strong) !important;
+}
+
+:where(.focus\:ring-blue-500:focus) {
+  --tw-ring-color: var(--dark-primary) !important;
+}
+
+:where(.focus\:border-blue-500:focus) {
+  border-color: var(--dark-primary) !important;
+}
+
+:where(.streamdown-markdown) {
+  color: inherit;
+}
+
+:where(.streamdown-markdown pre, .streamdown-markdown code) {
+  background-color: #0b1220;
+  color: #dbeafe;
+  border-color: var(--dark-border);
+}
+
+:where(.bg-blue-500 .streamdown-markdown, .bg-blue-500 .streamdown-markdown *) {
+  color: #f8fafc;
 }
