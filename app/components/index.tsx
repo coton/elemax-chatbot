@@ -1135,7 +1135,7 @@ const Main: FC<IMainProps> = () => {
         <div className='relative min-w-0 grow p-2'>
           <div
             ref={mainPanelRef}
-            className='app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-2xl'
+            className='app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-2xl border-0 shadow-none'
           >
             <Header
               title={APP_INFO.title}

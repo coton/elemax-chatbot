@@ -119,7 +119,7 @@ const Sidebar: FC<ISidebarProps> = ({
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   return (
     <div
-      className="app-sidebar flex w-full grow flex-col rounded-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)] mobile:shadow-lg"
+      className="app-sidebar flex w-full grow flex-col rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
     >
       <div className="flex shrink-0 items-center gap-3 p-3 pr-2">
         <img
