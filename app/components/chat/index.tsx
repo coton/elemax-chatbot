@@ -5,7 +5,6 @@ import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
 import Textarea from 'rc-textarea'
 import { useUser } from '@clerk/nextjs'
-import s from './style.module.css'
 import Answer from './answer'
 import Question from './question'
 import type { FeedbackFunc } from './type'
@@ -19,6 +18,12 @@ import { useImageFiles } from '@/app/components/base/image-uploader/hooks'
 import FileUploaderInAttachmentWrapper from '@/app/components/base/file-uploader-in-attachment'
 import type { FileEntity, FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { getProcessedFiles } from '@/app/components/base/file-uploader-in-attachment/utils'
+
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
+    <path d="M3 12.9999H9V10.9999H3V1.84558C3 1.56944 3.22386 1.34558 3.5 1.34558C3.58425 1.34558 3.66714 1.36687 3.74096 1.40747L22.2034 11.5618C22.4454 11.6949 22.5337 11.9989 22.4006 12.2409C22.3549 12.324 22.2865 12.3924 22.2034 12.4381L3.74096 22.5924C3.499 22.7255 3.19497 22.6372 3.06189 22.3953C3.02129 22.3214 3 22.2386 3 22.1543V12.9999Z" />
+  </svg>
+)
 
 export interface IChatProps {
   chatList: ChatItem[]
@@ -38,6 +43,7 @@ export interface IChatProps {
   controlClearQuery?: number
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
+  isSidebarCollapsed?: boolean
 }
 
 const Chat: FC<IChatProps> = ({
@@ -52,6 +58,7 @@ const Chat: FC<IChatProps> = ({
   controlClearQuery,
   visionConfig,
   fileConfig,
+  isSidebarCollapsed = false,
 }) => {
   const { t } = useTranslation()
   const { user } = useUser()
@@ -164,10 +171,50 @@ const Chat: FC<IChatProps> = ({
     handleSend()
   }
 
+  const suggestedQuestionSource = [...chatList].reverse().find(item =>
+    item.isAnswer && (item.suggestedQuestionsLoading || (item.suggestedQuestions?.length ?? 0) > 0),
+  )
+
+  const renderSuggestedQuestions = () => {
+    if (!suggestedQuestionSource) { return null }
+
+    const { suggestedQuestions = [], suggestedQuestionsLoading = false } = suggestedQuestionSource
+
+    return (
+      <div className="mb-3">
+        <div className="flex items-center gap-6">
+          <div className="h-px flex-1 bg-[#e5e7eb]" />
+          <div className="shrink-0 text-sm font-semibold text-gray-400">TRY TO ASK</div>
+          <div className="h-px flex-1 bg-[#e5e7eb]" />
+        </div>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {suggestedQuestionsLoading
+            ? [0, 1, 2].map(index => (
+              <div
+                key={index}
+                className="h-9 animate-pulse rounded-lg border border-[#e5e7eb] bg-[#f3f4f6]"
+                style={{ width: [120, 142, 112][index] }}
+              />
+            ))
+            : suggestedQuestions.map((suggestion, index) => (
+              <button
+                key={index}
+                type="button"
+                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-4 py-2 text-sm font-semibold leading-5 text-gray-700 shadow-sm transition-colors hover:border-[#bfdbfe] hover:bg-[#eff6ff] active:bg-[#f3f4f6]"
+                onClick={() => suggestionClick(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={cn(!feedbackDisabled && 'px-3.5', 'h-full')}>
       {/* Chat List */}
-      <div className="h-full space-y-[30px]">
+      <div className="h-full space-y-2 pt-6">
         {chatList.map((item) => {
           if (item.isAnswer) {
             const isLast = item.id === chatList[chatList.length - 1].id
@@ -195,9 +242,14 @@ const Chat: FC<IChatProps> = ({
       </div>
       {
         !isHideSendInput && (
-          <div className='fixed z-10 bottom-4 left-1/2 transform -translate-x-1/2 pc:ml-[122px] tablet:ml-[96px] mobile:ml-0 pc:w-[794px] tablet:w-[794px] max-w-full mobile:w-full px-3.5'>
-            <div className='relative p-[5.5px] bg-[#27282d] border-[1.5px] border-[#3a3b40] rounded-xl'>
-              <div className='max-h-[150px] overflow-y-auto'>
+          <div className={cn(
+            'fixed z-10 bottom-4 left-1/2 max-w-full -translate-x-1/2 transform px-4 mobile:w-full tablet:w-[768px] pc:w-[768px]',
+            !isSidebarCollapsed && 'pc:ml-[118px] tablet:ml-[108px]',
+            isSidebarCollapsed && 'pc:ml-0 tablet:ml-0',
+          )}>
+            {renderSuggestedQuestions()}
+            <div className='relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 pb-[9px] shadow-md backdrop-blur-sm'>
+              <div className='relative max-h-[158px] overflow-x-hidden overflow-y-auto px-[9px] pt-[9px]'>
                 {
                   visionConfig?.enabled && files.length > 0 && (
                     <div className='mb-1'>
@@ -223,9 +275,7 @@ const Chat: FC<IChatProps> = ({
                   )
                 }
                 <Textarea
-                  className={`
-                    block w-full px-2 pr-[104px] py-[7px] leading-5 max-h-none bg-transparent text-base text-gray-100 outline-none appearance-none resize-none placeholder:text-gray-400
-                  `}
+                  className="block w-full max-h-none resize-none appearance-none bg-transparent p-1 pr-[112px] text-base leading-6 text-gray-900 outline-none placeholder:text-gray-400"
                   placeholder={t('app.chat.inputPlaceholder')}
                   value={query}
                   onChange={handleContentChange}
@@ -234,7 +284,7 @@ const Chat: FC<IChatProps> = ({
                   autoSize
                 />
               </div>
-              <div className="absolute bottom-2 right-6 flex items-center gap-2 h-8">
+              <div className="absolute bottom-[9px] right-[9px] flex items-center gap-2 h-8">
                 {
                   visionConfig?.enabled && (
                     <ChatImageUploader
@@ -253,7 +303,14 @@ const Chat: FC<IChatProps> = ({
                     </div>
                   }
                 >
-                  <div className={`${s.sendBtn} w-8 h-8 cursor-pointer rounded-md`} onClick={handleSend}></div>
+                  <button
+                    type="button"
+                    className="btn disabled:btn-disabled btn-primary btn-medium ml-3 w-8 px-0"
+                    style={{ backgroundColor: 'rgb(28, 100, 242)' }}
+                    onClick={handleSend}
+                  >
+                    <SendIcon />
+                  </button>
                 </Tooltip>
               </div>
             </div>

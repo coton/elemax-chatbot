@@ -11,21 +11,32 @@
     "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
     "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
 
-  --foreground-rgb: 229, 231, 235;
-  --background-start-rgb: 10, 15, 25;
-  --background-end-rgb: 15, 23, 42;
-  --dark-bg: #0a0f19;
-  --dark-bg-soft: #0f172a;
-  --dark-surface: #111827;
-  --dark-surface-elevated: #172033;
-  --dark-surface-hover: #1f2937;
-  --dark-border: #263244;
-  --dark-border-strong: #334155;
-  --dark-text: #e5e7eb;
-  --dark-text-muted: #9ca3af;
-  --dark-text-subtle: #64748b;
-  --dark-primary: #3b82f6;
-  --dark-primary-soft: #1e3a8a;
+  --app-outer-bg: #e9eaf0;
+  --app-panel-bg: #f7f8fa;
+  --app-panel-muted-bg: #f1f2f5;
+  --app-elevated-bg: rgba(255, 255, 255, 0.92);
+  --app-actionbar-bg: rgba(255, 255, 255, 0.92);
+  --app-text: #111827;
+  --app-text-secondary: #374151;
+  --app-text-tertiary: #6b7280;
+  --app-border: rgba(17, 24, 39, 0.08);
+  --app-divider: #d9dce3;
+
+  --foreground-rgb: 17, 24, 39;
+  --background-start-rgb: 243, 244, 246;
+  --background-end-rgb: 249, 250, 251;
+  --dark-bg: var(--app-outer-bg);
+  --dark-bg-soft: var(--app-panel-bg);
+  --dark-surface: var(--app-panel-bg);
+  --dark-surface-elevated: var(--app-elevated-bg);
+  --dark-surface-hover: #f3f4f6;
+  --dark-border: #e5e7eb;
+  --dark-border-strong: #d1d5db;
+  --dark-text: var(--app-text);
+  --dark-text-muted: var(--app-text-tertiary);
+  --dark-text-subtle: #9ca3af;
+  --dark-primary: #1c64f2;
+  --dark-primary-soft: #ebf5ff;
 
   --primary-glow: conic-gradient(from 180deg at 50% 50%,
       #16abff33 0deg,
@@ -94,7 +105,7 @@ body {
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   background: var(--dark-bg);
 }
 
@@ -107,6 +118,54 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb)); */
+}
+
+.theme-light {
+  --app-outer-bg: #e9eaf0;
+  --app-panel-bg: #f7f8fa;
+  --app-panel-muted-bg: #f1f2f5;
+  --app-elevated-bg: rgba(255, 255, 255, 0.92);
+  --app-actionbar-bg: rgba(255, 255, 255, 0.92);
+  --app-text: #111827;
+  --app-text-secondary: #374151;
+  --app-text-tertiary: #6b7280;
+  --app-border: rgba(17, 24, 39, 0.08);
+  --app-divider: #d9dce3;
+}
+
+.theme-dark {
+  --app-outer-bg: #1d1d20;
+  --app-panel-bg: #202023;
+  --app-panel-muted-bg: #2a2a2e;
+  --app-elevated-bg: rgba(38, 38, 42, 0.94);
+  --app-actionbar-bg: rgba(38, 38, 42, 0.94);
+  --app-text: #f4f4f5;
+  --app-text-secondary: #d4d4d8;
+  --app-text-tertiary: #a1a1aa;
+  --app-border: rgba(255, 255, 255, 0.1);
+  --app-divider: rgba(255, 255, 255, 0.1);
+  --foreground-rgb: 244, 244, 245;
+  --dark-bg: var(--app-outer-bg);
+  --dark-bg-soft: var(--app-panel-bg);
+  --dark-surface: var(--app-panel-muted-bg);
+  --dark-surface-elevated: var(--app-elevated-bg);
+  --dark-surface-hover: #303035;
+  --dark-border: rgba(255, 255, 255, 0.1);
+  --dark-border-strong: rgba(255, 255, 255, 0.16);
+  --dark-text: var(--app-text);
+  --dark-text-muted: var(--app-text-tertiary);
+  --dark-text-subtle: #8b8b93;
+}
+
+.app-shell,
+.app-sidebar {
+  background-color: var(--app-outer-bg);
+  color: var(--app-text);
+}
+
+.app-main-panel {
+  background-color: var(--app-panel-bg);
+  color: var(--app-text);
 }
 
 a {
@@ -164,61 +223,12 @@ textarea::placeholder {
   color: var(--dark-text-subtle);
 }
 
-:where(.bg-white) {
-  background-color: var(--dark-surface) !important;
-}
-
-:where(.bg-gray-50, .bg-gray-100) {
-  background-color: var(--dark-bg-soft) !important;
-}
-
-:where(.bg-gray-200) {
-  background-color: var(--dark-surface-hover) !important;
-}
-
 :where(.bg-blue-500) {
   background-color: #1d4ed8 !important;
 }
 
-:where(.bg-primary-50, .bg-primary-100, .bg-primary-200) {
-  background-color: rgba(37, 99, 235, 0.22) !important;
-}
-
-:where(.bg-red-50, .bg-red-100) {
-  background-color: rgba(220, 38, 38, 0.2) !important;
-}
-
-:where(.bg-green-50, .bg-green-100) {
-  background-color: rgba(22, 163, 74, 0.18) !important;
-}
-
-:where(.bg-yellow-100) {
-  background-color: rgba(202, 138, 4, 0.2) !important;
-}
-
-:where(.hover\:bg-white:hover, .hover\:bg-gray-50:hover, .hover\:bg-gray-100:hover, .hover\:bg-gray-200:hover),
-:where(.group:hover .group-hover\:bg-gray-100, .group:hover .group-hover\:bg-gray-200) {
-  background-color: var(--dark-surface-hover) !important;
-}
-
-:where(.focus-visible\:bg-gray-200:focus-visible) {
-  background-color: var(--dark-surface-hover) !important;
-}
-
-:where(.text-gray-900, .text-gray-800, .text-gray-700) {
-  color: var(--dark-text) !important;
-}
-
-:where(.text-gray-500, .text-gray-400) {
-  color: var(--dark-text-muted) !important;
-}
-
-:where(.text-gray-300, .text-gray-200) {
-  color: var(--dark-text-subtle) !important;
-}
-
 :where(.text-blue-600, .text-primary-600) {
-  color: #60a5fa !important;
+  color: #1c64f2 !important;
 }
 
 :where(.border-gray-100, .border-gray-200, .border-gray-300, .border-black\/5, .border-black\/\[0\.02\], .border-black\/\[0\.08\]) {
@@ -254,4 +264,184 @@ textarea::placeholder {
 
 :where(.bg-blue-500 .streamdown-markdown, .bg-blue-500 .streamdown-markdown *) {
   color: #f8fafc;
+}
+
+.remixicon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-tertiary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+.action-btn:hover,
+.action-btn-hover {
+  color: var(--app-text-secondary);
+  background-color: var(--dark-surface-hover);
+}
+
+.action-btn:disabled,
+.action-btn-disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.action-btn-l {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.action-btn-m {
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.action-btn.action-btn-active {
+  color: #1c64f2;
+  background-color: #ebf5ff;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.btn-medium {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.btn-primary {
+  color: #ffffff;
+  background-color: #1c64f2;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
+}
+
+.btn-primary:hover {
+  background-color: #1a56db;
+}
+
+.btn:disabled,
+.disabled\:btn-disabled:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.system-md-regular {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.border-components-panel-border {
+  border-color: var(--app-border);
+}
+
+.border-components-actionbar-border {
+  border-color: var(--app-border);
+}
+
+.bg-components-panel-bg-blur {
+  background-color: var(--app-elevated-bg);
+}
+
+.bg-components-actionbar-bg {
+  background-color: var(--app-actionbar-bg);
+}
+
+.bg-components-segmented-control-bg-normal {
+  background-color: var(--app-panel-muted-bg);
+}
+
+.bg-components-segmented-control-item-active-bg {
+  background-color: var(--app-elevated-bg);
+}
+
+.bg-divider-regular {
+  background-color: var(--app-divider);
+}
+
+.text-text-secondary {
+  color: var(--app-text-secondary);
+}
+
+.text-text-tertiary {
+  color: var(--app-text-tertiary);
+}
+
+.text-text-accent,
+.text-text-accent-light-mode-only {
+  color: #1c64f2;
+}
+
+.hover\:bg-state-base-hover:hover {
+  background-color: var(--dark-surface-hover);
+}
+
+.hover\:bg-components-segmented-control-item-active-bg:hover {
+  background-color: var(--app-elevated-bg);
+}
+
+.hover\:text-text-secondary:hover {
+  color: var(--app-text-secondary);
+}
+
+.hover\:text-text-accent-light-mode-only:hover {
+  color: #1c64f2;
+}
+
+.chat-answer-container:hover .answer-actionbar {
+  display: flex;
+}
+
+.theme-dark :where(.text-gray-900, .text-gray-800, .text-gray-700) {
+  color: var(--app-text-secondary) !important;
+}
+
+.theme-dark :where(.text-gray-500, .text-gray-400) {
+  color: var(--app-text-tertiary) !important;
+}
+
+.theme-dark :where(.bg-white, [class~="bg-white/95"]) {
+  background-color: var(--app-panel-muted-bg) !important;
+}
+
+.theme-dark :where([class~="bg-[#f9fafb]"]) {
+  background-color: var(--app-panel-muted-bg) !important;
+}
+
+.theme-dark :where([class~="bg-[#eaf2ff]"], [class~="bg-[#eff6ff]"]) {
+  background-color: rgba(28, 100, 242, 0.16) !important;
+}
+
+.theme-dark :where([class~="hover:bg-[#eef0f3]"]:hover, [class~="hover:bg-[#dbeafe]"]:hover) {
+  background-color: var(--dark-surface-hover) !important;
+}
+
+.theme-dark :where([class~="border-[#d0d5dd]"], [class~="border-[#e5e7eb]"], [class~="border-[#d6e4ff]"]) {
+  border-color: var(--app-border) !important;
+}
+
+.theme-dark input,
+.theme-dark textarea {
+  color: var(--app-text);
 }

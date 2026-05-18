@@ -1,8 +1,16 @@
 import { ClerkProvider } from '@clerk/nextjs'
+import type { Metadata } from 'next'
 import { getLocaleOnServer } from '@/i18n/server'
 
 import './styles/globals.css'
 import './styles/markdown.scss'
+
+export const metadata: Metadata = {
+  icons: {
+    icon: '/favicon.ico?v=elemax',
+    shortcut: '/favicon.ico?v=elemax',
+  },
+}
 
 const LocaleLayout = async ({
   children,

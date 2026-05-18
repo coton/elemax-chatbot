@@ -6,7 +6,7 @@ import produce, { setAutoFreeze } from 'immer'
 import { useBoolean, useGetState } from 'ahooks'
 import useConversation from '@/hooks/use-conversation'
 import Toast from '@/app/components/base/toast'
-import Sidebar from '@/app/components/sidebar'
+import Sidebar, { type ThemePreference } from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
 import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, fetchSuggestedQuestions, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
@@ -47,6 +47,9 @@ const getDefaultPromptInputs = (promptVariables: PromptVariable[] = []) => {
   }, {})
 }
 
+const THEME_STORAGE_KEY = 'elemax-theme-preference'
+const isThemePreference = (value: string | null): value is ThemePreference => value === 'system' || value === 'light' || value === 'dark'
+
 const Main: FC<IMainProps> = () => {
   const { t } = useTranslation()
   const media = useBreakpoints()
@@ -63,6 +66,7 @@ const Main: FC<IMainProps> = () => {
   const [isConversationLoading, setIsConversationLoading] = useState<boolean>(false)
   // in mobile, show sidebar by click button
   const [isShowSidebar, { setTrue: showSidebar, setFalse: hideSidebar }] = useBoolean(false)
+  const [isSidebarCollapsed, { toggle: toggleSidebarCollapsed, setTrue: collapseSidebar, setFalse: expandSidebar }] = useBoolean(false)
   const [visionConfig, setVisionConfig] = useState<VisionSettings | undefined>({
     enabled: false,
     number_limits: 2,
@@ -70,6 +74,34 @@ const Main: FC<IMainProps> = () => {
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
+  const [themePreference, setThemePreference] = useState<ThemePreference>('system')
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light')
+  const [isThemeReady, setIsThemeReady] = useState(false)
+  const effectiveTheme = themePreference === 'system' ? systemTheme : themePreference
+
+  useEffect(() => {
+    const savedTheme = globalThis.localStorage?.getItem(THEME_STORAGE_KEY) || null
+    if (isThemePreference(savedTheme)) { setThemePreference(savedTheme) }
+
+    const mediaQuery = globalThis.matchMedia?.('(prefers-color-scheme: dark)')
+    const syncSystemTheme = () => {
+      setSystemTheme(mediaQuery?.matches ? 'dark' : 'light')
+    }
+
+    syncSystemTheme()
+    mediaQuery?.addEventListener('change', syncSystemTheme)
+    setIsThemeReady(true)
+
+    return () => {
+      mediaQuery?.removeEventListener('change', syncSystemTheme)
+    }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = effectiveTheme
+    document.documentElement.style.colorScheme = effectiveTheme
+    if (isThemeReady) { globalThis.localStorage?.setItem(THEME_STORAGE_KEY, themePreference) }
+  }, [effectiveTheme, isThemeReady, themePreference])
 
   useEffect(() => {
     if (APP_INFO?.title) { document.title = APP_INFO.title }
@@ -290,6 +322,7 @@ const Main: FC<IMainProps> = () => {
   */
   const [chatList, setChatList, getChatList] = useGetState<ChatItem[]>([])
   const chatListDomRef = useRef<HTMLDivElement>(null)
+  const mainPanelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     // scroll to bottom with page-level scrolling
     if (chatListDomRef.current) {
@@ -1064,8 +1097,15 @@ const Main: FC<IMainProps> = () => {
     return (
       <Sidebar
         list={conversationList}
+        title={APP_INFO.title}
         onCurrentIdChange={handleConversationIdChange}
         onDeleteConversation={handleDeleteConversation}
+        onToggleCollapse={isMobile ? undefined : collapseSidebar}
+        onOpenSettings={() => {
+          mainPanelRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+        }}
+        themePreference={themePreference}
+        onThemeChange={setThemePreference}
         currentId={currConversationId}
       />
     )
@@ -1076,59 +1116,71 @@ const Main: FC<IMainProps> = () => {
   if (!APP_ID || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
   return (
-    <div className='bg-gray-100'>
-      <Header
-        title={APP_INFO.title}
-        isMobile={isMobile}
-        onShowSideBar={showSidebar}
-        onCreateNewChat={() => handleConversationIdChange('-1')}
-      />
-      <div className="flex rounded-t-2xl bg-white overflow-hidden">
+    <div className={`app-shell theme-${effectiveTheme} flex h-screen flex-col`}>
+      <div className="flex min-h-0 flex-1">
         {/* sidebar */}
-        {!isMobile && renderSidebar()}
+        {!isMobile && !isSidebarCollapsed && (
+          <div className="flex w-[236px] shrink-0 flex-col transition-all duration-200 ease-in-out">
+            {renderSidebar()}
+          </div>
+        )}
         {isMobile && isShowSidebar && (
           <div className='fixed inset-0 z-50' style={{ backgroundColor: 'rgba(35, 56, 118, 0.2)' }} onClick={hideSidebar} >
-            <div className='inline-block' onClick={e => e.stopPropagation()}>
+            <div className='inline-block h-full' onClick={e => e.stopPropagation()}>
               {renderSidebar()}
             </div>
           </div>
         )}
         {/* main */}
-        <div className='flex-grow flex flex-col h-[calc(100vh_-_3rem)] overflow-y-auto'>
-          <ConfigSence
-            conversationName={conversationName}
-            hasSetInputs={hasSetInputs}
-            isPublicVersion={isShowPrompt}
-            siteInfo={APP_INFO}
-            promptConfig={promptConfig}
-            onStartChat={handleStartChat}
-            canEditInputs={canEditInputs}
-            savedInputs={currInputs as Record<string, any>}
-            onInputsChange={setCurrInputs}
-          ></ConfigSence>
+        <div className='relative min-w-0 grow p-2'>
+          <div
+            ref={mainPanelRef}
+            className='app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-2xl'
+          >
+            <Header
+              title={APP_INFO.title}
+              isMobile={isMobile}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onShowSideBar={showSidebar}
+              onToggleSidebar={isSidebarCollapsed ? expandSidebar : toggleSidebarCollapsed}
+              onCreateNewChat={() => handleConversationIdChange('-1')}
+            />
+            <ConfigSence
+              conversationName={conversationName}
+              hasSetInputs={hasSetInputs}
+              isPublicVersion={isShowPrompt}
+              siteInfo={APP_INFO}
+              promptConfig={promptConfig}
+              onStartChat={handleStartChat}
+              canEditInputs={canEditInputs}
+              savedInputs={currInputs as Record<string, any>}
+              onInputsChange={setCurrInputs}
+            ></ConfigSence>
 
-          {
-            hasSetInputs && (
-              <div className='relative grow pc:w-[794px] max-w-full mobile:w-full pb-[180px] mx-auto mb-3.5' ref={chatListDomRef}>
-                {isConversationLoading
-                  ? (
-                    <div className='flex min-h-[240px] h-full items-center justify-center'>
-                      <Loading />
-                    </div>
-                  )
-                  : (
-                    <Chat
-                      chatList={chatList}
-                      onSend={handleSend}
-                      onFeedback={handleFeedback}
-                      isResponding={isResponding}
-                      checkCanSend={checkCanSend}
-                      visionConfig={visionConfig}
-                      fileConfig={fileConfig}
-                    />
-                  )}
-              </div>)
-          }
+            {
+              hasSetInputs && (
+                <div className='relative mx-auto mb-3.5 w-full max-w-[768px] grow pb-[180px]' ref={chatListDomRef}>
+                  {isConversationLoading
+                    ? (
+                      <div className='flex min-h-[240px] h-full items-center justify-center'>
+                        <Loading />
+                      </div>
+                    )
+                    : (
+                      <Chat
+                        chatList={chatList}
+                        onSend={handleSend}
+                        onFeedback={handleFeedback}
+                        isResponding={isResponding}
+                        checkCanSend={checkCanSend}
+                        visionConfig={visionConfig}
+                        fileConfig={fileConfig}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                      />
+                    )}
+                </div>)
+            }
+          </div>
         </div>
       </div>
     </div>
