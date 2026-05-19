@@ -16,11 +16,21 @@ import ChatImageUploader from '@/app/components/base/image-uploader/chat-image-u
 import ImageList from '@/app/components/base/image-uploader/image-list'
 import { useImageFiles } from '@/app/components/base/image-uploader/hooks'
 import FileUploaderInAttachmentWrapper from '@/app/components/base/file-uploader-in-attachment'
-import type { FileEntity, FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
+import type {
+  FileEntity,
+  FileUpload,
+} from '@/app/components/base/file-uploader-in-attachment/types'
 import { getProcessedFiles } from '@/app/components/base/file-uploader-in-attachment/utils'
 
 const SendIcon = () => (
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="remixicon h-4 w-4">
+  <svg
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    className="remixicon h-4 w-4"
+  >
     <path d="M3 12.9999H9V10.9999H3V1.84558C3 1.56944 3.22386 1.34558 3.5 1.34558C3.58425 1.34558 3.66714 1.36687 3.74096 1.40747L22.2034 11.5618C22.4454 11.6949 22.5337 11.9989 22.4006 12.2409C22.3549 12.324 22.2865 12.3924 22.2034 12.4381L3.74096 22.5924C3.499 22.7255 3.19497 22.6372 3.06189 22.3953C3.02129 22.3214 3 22.2386 3 22.1543V12.9999Z" />
   </svg>
 )
@@ -36,14 +46,19 @@ export interface IChatProps {
    */
   isHideSendInput?: boolean
   onFeedback?: FeedbackFunc
+  onRetry?: (answer: ChatItem) => void
+  onQuestionRetry?: (question: ChatItem, content: string) => void
+  onQuestionVariantChange?: (question: ChatItem, index: number) => void
+  onVariantChange?: (answer: ChatItem, index: number) => void
   checkCanSend?: () => boolean
-  onSend?: (message: string, files: VisionFile[]) => void
+  onSend?: (message: string, files: VisionFile[]) => boolean | void
   useCurrentUserAvatar?: boolean
   isResponding?: boolean
   controlClearQuery?: number
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
   isSidebarCollapsed?: boolean
+  isSendLocked?: boolean
 }
 
 const Chat: FC<IChatProps> = ({
@@ -51,14 +66,19 @@ const Chat: FC<IChatProps> = ({
   feedbackDisabled = false,
   isHideSendInput = false,
   onFeedback,
+  onRetry,
+  onQuestionRetry,
+  onQuestionVariantChange,
+  onVariantChange,
   checkCanSend,
-  onSend = () => { },
+  onSend = () => {},
   useCurrentUserAvatar,
   isResponding,
   controlClearQuery,
   visionConfig,
   fileConfig,
   isSidebarCollapsed = false,
+  isSendLocked = false,
 }) => {
   const { t } = useTranslation()
   const { user } = useUser()
@@ -66,7 +86,10 @@ const Chat: FC<IChatProps> = ({
   const isUseInputMethod = useRef(false)
   const userEmail = user?.primaryEmailAddress?.emailAddress || ''
   const userDisplayName = user?.fullName || user?.username || userEmail
-  const userAvatarInitial = (userDisplayName || 'U').trim().charAt(0).toUpperCase()
+  const userAvatarInitial = (userDisplayName || 'U')
+    .trim()
+    .charAt(0)
+    .toUpperCase()
   const userAvatarUrl = user?.hasImage ? user.imageUrl : ''
 
   const [query, setQuery] = React.useState('')
@@ -107,12 +130,21 @@ const Chat: FC<IChatProps> = ({
     onClear,
   } = useImageFiles()
 
-  const [attachmentFiles, setAttachmentFiles] = React.useState<FileEntity[]>([])
+  const [attachmentFiles, setAttachmentFiles] = React.useState<FileEntity[]>(
+    [],
+  )
   const attachmentFileConfig = React.useMemo(() => {
-    if (!fileConfig?.enabled) { return undefined }
+    if (!fileConfig?.enabled) {
+      return undefined
+    }
 
-    const allowedFileUploadMethods = fileConfig.allowed_file_upload_methods?.filter(method => method !== TransferMethod.local_file) ?? []
-    if (!allowedFileUploadMethods.length) { return undefined }
+    const allowedFileUploadMethods
+      = fileConfig.allowed_file_upload_methods?.filter(
+        method => method !== TransferMethod.local_file,
+      ) ?? []
+    if (!allowedFileUploadMethods.length) {
+      return undefined
+    }
 
     return {
       ...fileConfig,
@@ -121,37 +153,63 @@ const Chat: FC<IChatProps> = ({
   }, [fileConfig])
 
   const handleSend = () => {
-    if (!valid() || (checkCanSend && !checkCanSend())) { return }
-    const hasPendingImageUploads = files.some(file => file.progress !== -1 && file.progress < 100)
-    const hasPendingAttachmentUploads = attachmentFiles.some(file => file.progress !== -1 && file.progress < 100)
+    if (!valid() || (checkCanSend && !checkCanSend())) {
+      return
+    }
+    const hasPendingImageUploads = files.some(
+      file => file.progress !== -1 && file.progress < 100,
+    )
+    const hasPendingAttachmentUploads = attachmentFiles.some(
+      file => file.progress !== -1 && file.progress < 100,
+    )
     if (hasPendingImageUploads || hasPendingAttachmentUploads) {
       logError(t('app.errorMessage.waitForFileUpload'))
       return
     }
-    const imageFiles: VisionFile[] = files.filter(file => file.progress !== -1).map(fileItem => ({
-      type: 'image',
-      transfer_method: fileItem.type,
-      url: fileItem.url,
-      upload_file_id: fileItem.fileId,
-    }))
+    const imageFiles: VisionFile[] = files
+      .filter(file => file.progress !== -1)
+      .map(fileItem => ({
+        type: 'image',
+        transfer_method: fileItem.type,
+        url: fileItem.url,
+        upload_file_id: fileItem.fileId,
+      }))
     const docAndOtherFiles: VisionFile[] = getProcessedFiles(attachmentFiles)
     const combinedFiles: VisionFile[] = [...imageFiles, ...docAndOtherFiles]
-    onSend(queryRef.current, combinedFiles)
-    if (!files.find(item => item.type === TransferMethod.local_file && !item.fileId)) {
-      if (files.length) { onClear() }
+    const isSendAccepted = onSend(queryRef.current, combinedFiles) !== false
+    if (!isSendAccepted) {
+      return
+    }
+    if (
+      !files.find(
+        item => item.type === TransferMethod.local_file && !item.fileId,
+      )
+    ) {
+      if (files.length) {
+        onClear()
+      }
       if (!isResponding) {
         setQuery('')
         queryRef.current = ''
       }
     }
-    if (!attachmentFiles.find(item => item.transferMethod === TransferMethod.local_file && !item.uploadedId)) { setAttachmentFiles([]) }
+    if (
+      !attachmentFiles.find(
+        item =>
+          item.transferMethod === TransferMethod.local_file && !item.uploadedId,
+      )
+    ) {
+      setAttachmentFiles([])
+    }
   }
 
   const handleKeyUp = (e: any) => {
     if (e.code === 'Enter') {
       e.preventDefault()
       // prevent send message when using input method enter
-      if (!e.shiftKey && !isUseInputMethod.current) { handleSend() }
+      if (!e.shiftKey && !isUseInputMethod.current) {
+        handleSend()
+      }
     }
   }
 
@@ -171,20 +229,30 @@ const Chat: FC<IChatProps> = ({
     handleSend()
   }
 
-  const suggestedQuestionSource = [...chatList].reverse().find(item =>
-    item.isAnswer && (item.suggestedQuestionsLoading || (item.suggestedQuestions?.length ?? 0) > 0),
-  )
+  const suggestedQuestionSource = [...chatList]
+    .reverse()
+    .find(
+      item =>
+        item.isAnswer
+        && (item.suggestedQuestionsLoading
+          || (item.suggestedQuestions?.length ?? 0) > 0),
+    )
 
   const renderSuggestedQuestions = () => {
-    if (!suggestedQuestionSource) { return null }
+    if (!suggestedQuestionSource) {
+      return null
+    }
 
-    const { suggestedQuestions = [], suggestedQuestionsLoading = false } = suggestedQuestionSource
+    const { suggestedQuestions = [], suggestedQuestionsLoading = false }
+      = suggestedQuestionSource
 
     return (
       <div className="mb-3">
         <div className="flex items-center gap-6">
           <div className="suggested-question-divider h-px flex-1 bg-[#e5e7eb]" />
-          <div className="shrink-0 text-xs font-semibold text-gray-400">TRY TO ASK</div>
+          <div className="shrink-0 text-xs font-semibold text-gray-400">
+            TRY TO ASK
+          </div>
           <div className="suggested-question-divider h-px flex-1 bg-[#e5e7eb]" />
         </div>
         <div className="mt-[10px] flex flex-wrap items-center justify-center gap-3">
@@ -218,105 +286,110 @@ const Chat: FC<IChatProps> = ({
         {chatList.map((item) => {
           if (item.isAnswer) {
             const isLast = item.id === chatList[chatList.length - 1].id
-            return <Answer
-              key={item.id}
-              item={item}
-              feedbackDisabled={feedbackDisabled}
-              onFeedback={onFeedback}
-              isResponding={isResponding && isLast}
-              suggestionClick={suggestionClick}
-            />
+            return (
+              <Answer
+                key={item.id}
+                item={item}
+                feedbackDisabled={feedbackDisabled}
+                onFeedback={onFeedback}
+                onRetry={onRetry}
+                onVariantChange={onVariantChange}
+                isResponding={isResponding && isLast}
+                isSendLocked={isSendLocked}
+                suggestionClick={suggestionClick}
+              />
+            )
           }
           return (
             <Question
               key={item.id}
-              id={item.id}
-              content={item.content}
+              item={item}
               useCurrentUserAvatar={useCurrentUserAvatar}
               userAvatarInitial={userAvatarInitial}
               userAvatarUrl={userAvatarUrl}
-              imgSrcs={(item.message_files && item.message_files?.length > 0) ? item.message_files.map(item => item.url) : []}
+              imgSrcs={
+                item.message_files && item.message_files?.length > 0
+                  ? item.message_files.map(item => item.url)
+                  : []
+              }
+              isSendLocked={isSendLocked}
+              onRetry={onQuestionRetry}
+              onVariantChange={onQuestionVariantChange}
             />
           )
         })}
       </div>
-      {
-        !isHideSendInput && (
-          <div className={cn(
+      {!isHideSendInput && (
+        <div
+          className={cn(
             'fixed z-10 bottom-4 left-1/2 max-w-full -translate-x-1/2 transform px-4 mobile:w-full tablet:w-[768px] pc:w-[768px]',
             !isSidebarCollapsed && 'pc:ml-[118px] tablet:ml-[108px]',
             isSidebarCollapsed && 'pc:ml-0 tablet:ml-0',
-          )}>
-            {renderSuggestedQuestions()}
-            <div className='relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 pb-[9px] shadow-md backdrop-blur-sm'>
-              <div className='relative max-h-[158px] overflow-x-hidden overflow-y-auto px-[9px] pt-[9px]'>
-                {
-                  visionConfig?.enabled && files.length > 0 && (
-                    <div className='mb-1'>
-                      <ImageList
-                        list={files}
-                        onRemove={onRemove}
-                        onReUpload={onReUpload}
-                        onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                        onImageLinkLoadError={onImageLinkLoadError}
-                      />
-                    </div>
-                  )
-                }
-                {
-                  attachmentFileConfig?.enabled && (
-                    <div className='mb-1'>
-                      <FileUploaderInAttachmentWrapper
-                        fileConfig={attachmentFileConfig}
-                        value={attachmentFiles}
-                        onChange={setAttachmentFiles}
-                      />
-                    </div>
-                  )
-                }
-                <Textarea
-                  className="block w-full max-h-none resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-6 text-gray-900 outline-none placeholder:text-gray-400"
-                  placeholder={t('app.chat.inputPlaceholder')}
-                  value={query}
-                  onChange={handleContentChange}
-                  onKeyUp={handleKeyUp}
-                  onKeyDown={handleKeyDown}
-                  autoSize
+          )}
+        >
+          {renderSuggestedQuestions()}
+          <div className="relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
+            <div className="relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">
+              {visionConfig?.enabled && files.length > 0 && (
+                <div className="mb-1">
+                  <ImageList
+                    list={files}
+                    onRemove={onRemove}
+                    onReUpload={onReUpload}
+                    onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                    onImageLinkLoadError={onImageLinkLoadError}
+                  />
+                </div>
+              )}
+              {attachmentFileConfig?.enabled && (
+                <div className="mb-1">
+                  <FileUploaderInAttachmentWrapper
+                    fileConfig={attachmentFileConfig}
+                    value={attachmentFiles}
+                    onChange={setAttachmentFiles}
+                  />
+                </div>
+              )}
+              <Textarea
+                className="block w-full max-h-none min-h-8 resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-8 text-gray-900 outline-none placeholder:text-gray-400"
+                placeholder={t('app.chat.inputPlaceholder')}
+                value={query}
+                onChange={handleContentChange}
+                onKeyUp={handleKeyUp}
+                onKeyDown={handleKeyDown}
+                autoSize
+              />
+            </div>
+            <div className="absolute right-[9px] top-1/2 flex h-8 -translate-y-1/2 items-center gap-1.5">
+              {visionConfig?.enabled && (
+                <ChatImageUploader
+                  settings={visionConfig}
+                  onUpload={onUpload}
+                  disabled={files.length >= visionConfig.number_limits}
                 />
-              </div>
-              <div className="absolute bottom-[9px] right-[9px] flex items-center gap-1.5 h-8">
-                {
-                  visionConfig?.enabled && (
-                    <ChatImageUploader
-                      settings={visionConfig}
-                      onUpload={onUpload}
-                      disabled={files.length >= visionConfig.number_limits}
-                    />
-                  )
+              )}
+              <Tooltip
+                selector="send-tip"
+                htmlContent={
+                  <div>
+                    <div>{t('common.operation.send')} Enter</div>
+                    <div>{t('common.operation.lineBreak')} Shift Enter</div>
+                  </div>
                 }
-                <Tooltip
-                  selector='send-tip'
-                  htmlContent={
-                    <div>
-                      <div>{t('common.operation.send')} Enter</div>
-                      <div>{t('common.operation.lineBreak')} Shift Enter</div>
-                    </div>
-                  }
+              >
+                <button
+                  type="button"
+                  className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
+                  style={{ backgroundColor: 'rgb(28, 100, 242)' }}
+                  onClick={handleSend}
                 >
-                  <button
-                    type="button"
-                    className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
-                    style={{ backgroundColor: 'rgb(28, 100, 242)' }}
-                    onClick={handleSend}
-                  >
-                    <SendIcon />
-                  </button>
-                </Tooltip>
-              </div>
+                  <SendIcon />
+                </button>
+              </Tooltip>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
     </div>
   )
 }

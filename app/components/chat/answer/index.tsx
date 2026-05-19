@@ -4,12 +4,15 @@ import type { FeedbackFunc } from '../type'
 import type { ChatItem, VisionFile } from '@/types/app'
 import type { Emoji } from '@/types/tools'
 import React from 'react'
+import copy from 'copy-to-clipboard'
 import StreamdownMarkdown from '@/app/components/base/streamdown-markdown'
 import WorkflowProcess from '@/app/components/workflow/workflow-process'
+import Toast from '@/app/components/base/toast'
 import ImageGallery from '../../base/image-gallery'
 import LoadingAnim from '../loading-anim'
 import s from '../style.module.css'
 import Thought from '../thought'
+import { getActiveAnswerVariant, getActiveAnswerVariantIndex, getAnswerVariantCount } from '@/utils/chat-variants'
 
 const LikeIcon = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
@@ -35,11 +38,22 @@ const RegenerateIcon = () => (
   </svg>
 )
 
+const ChevronRightIcon = ({ className = '' }: { className?: string }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} data-icon="ChevronRight" aria-hidden="true">
+    <g id="chevron-right">
+      <path id="Icon" d="M5.25 10.5L8.75 7L5.25 3.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  </svg>
+)
+
 interface IAnswerProps {
   item: ChatItem
   feedbackDisabled: boolean
   onFeedback?: FeedbackFunc
+  onRetry?: (answer: ChatItem) => void
+  onVariantChange?: (answer: ChatItem, index: number) => void
   isResponding?: boolean
+  isSendLocked?: boolean
   allToolIcons?: Record<string, string | Emoji>
   suggestionClick?: (suggestion: string) => void
 }
@@ -49,17 +63,25 @@ const Answer: FC<IAnswerProps> = ({
   item,
   feedbackDisabled = false,
   onFeedback,
+  onRetry,
+  onVariantChange,
   isResponding,
+  isSendLocked,
   allToolIcons,
 }) => {
-  const { id, content, feedback, agent_thoughts, workflowProcess } = item
+  const activeItem = getActiveAnswerVariant(item) as ChatItem
+  const { id, content, feedback, agent_thoughts, workflowProcess } = activeItem
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
+  const isStreaming = !!isResponding || !!activeItem.isRetrying
+  const variantCount = getAnswerVariantCount(item)
+  const activeVariantIndex = getActiveAnswerVariantIndex(item)
 
   const feedbackEnabled = !feedbackDisabled && !item.feedbackDisabled
+  const feedbackActionEnabled = feedbackEnabled && !isStreaming
   const activeRating = feedback?.rating
 
-  const handleCopy = async () => {
-    await navigator.clipboard?.writeText(content || '')
+  const handleCopy = () => {
+    if (copy(content || '')) { Toast.notify({ type: 'success', message: 'Copied successfully' }) }
   }
 
   const handleFeedback = (rating: 'like' | 'dislike') => {
@@ -70,6 +92,14 @@ const Answer: FC<IAnswerProps> = ({
   const getImgs = (list?: VisionFile[]) => {
     if (!list) { return [] }
     return list.filter(file => file.type === 'image' && file.belongs_to === 'assistant')
+  }
+
+  const handlePreviousVariant = () => {
+    onVariantChange?.(item, activeVariantIndex - 1)
+  }
+
+  const handleNextVariant = () => {
+    onVariantChange?.(item, activeVariantIndex + 1)
   }
 
   const agentModeAnswer = (
@@ -110,11 +140,11 @@ const Answer: FC<IAnswerProps> = ({
         </div>
         <div className={`${s.answerWrap} chat-answer-container group ml-4 w-0 grow pb-4`}>
           <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-gray-900 ${workflowProcess ? 'w-full' : ''}`}>
+            <div className={`assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-gray-900 ${workflowProcess ? 'w-full' : ''}`}>
               {workflowProcess && (
                 <WorkflowProcess data={workflowProcess} hideInfo />
               )}
-              {(isResponding && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
+              {(isStreaming && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
                 ? (
                   <div className="flex items-center justify-center w-6 h-5">
                     <LoadingAnim type="text" />
@@ -125,32 +155,59 @@ const Answer: FC<IAnswerProps> = ({
                   : (
                     <StreamdownMarkdown content={content} />
                   ))}
-              <div className="absolute flex justify-end gap-1 -bottom-4 right-2" style={{}}>
-                <div className="answer-actionbar ml-1 items-center gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm hidden group-hover:flex">
+              {variantCount > 1 && (
+                <div className="flex items-center justify-center pt-3.5 text-sm">
                   <button
                     type="button"
-                    className={`action-btn action-btn-m ${activeRating === 'like' ? 'action-btn-active' : ''}`}
-                    aria-pressed={activeRating === 'like'}
-                    onClick={() => handleFeedback('like')}
+                    className={activeVariantIndex > 0 ? 'opacity-100' : 'opacity-30'}
+                    disabled={activeVariantIndex <= 0}
+                    aria-label="Previous answer"
+                    onClick={handlePreviousVariant}
                   >
-                    <LikeIcon />
+                    <ChevronRightIcon className="h-[14px] w-[14px] rotate-180 text-text-primary" />
                   </button>
+                  <span className="px-2 text-xs text-text-primary">{activeVariantIndex + 1} /{variantCount}</span>
                   <button
                     type="button"
-                    className={`action-btn action-btn-m ${activeRating === 'dislike' ? 'action-btn-active' : ''}`}
-                    aria-pressed={activeRating === 'dislike'}
-                    onClick={() => handleFeedback('dislike')}
+                    className={activeVariantIndex < variantCount - 1 ? 'opacity-100' : 'opacity-30'}
+                    disabled={activeVariantIndex >= variantCount - 1}
+                    aria-label="Next answer"
+                    onClick={handleNextVariant}
                   >
-                    <DislikeIcon />
+                    <ChevronRightIcon className="h-[14px] w-[14px] text-text-primary" />
                   </button>
                 </div>
+              )}
+              <div className="absolute flex justify-end gap-1 -bottom-4 right-2" style={{}}>
+                {feedbackActionEnabled && (
+                  <div className="answer-actionbar ml-1 items-center gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm hidden group-hover:flex">
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-m ${activeRating === 'like' ? 'action-btn-active' : ''}`}
+                      aria-pressed={activeRating === 'like'}
+                      onClick={() => handleFeedback('like')}
+                    >
+                      <LikeIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-m ${activeRating === 'dislike' ? 'action-btn-active' : ''}`}
+                      aria-pressed={activeRating === 'dislike'}
+                      onClick={() => handleFeedback('dislike')}
+                    >
+                      <DislikeIcon />
+                    </button>
+                  </div>
+                )}
                 <div className="answer-actionbar ml-1 hidden items-center gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm group-hover:flex">
-                  <button type="button" className="action-btn action-btn-m" onClick={handleCopy}>
+                  <button type="button" className="action-btn action-btn-m" aria-label="Copy message" onClick={handleCopy}>
                     <CopyIcon />
                   </button>
-                  <button type="button" className="action-btn action-btn-m">
-                    <RegenerateIcon />
-                  </button>
+                  {feedbackActionEnabled && (
+                    <button type="button" className="action-btn action-btn-m" disabled={isSendLocked} aria-label="Retry answer" onClick={() => onRetry?.(item)}>
+                      <RegenerateIcon />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

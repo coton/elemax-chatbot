@@ -162,7 +162,6 @@ export interface ISidebarProps {
   onCurrentIdChange: (id: string) => void
   onDeleteConversation: (id: string) => void
   onToggleCollapse?: () => void
-  onOpenSettings?: () => void
   themePreference: ThemePreference
   onThemeChange: (theme: ThemePreference) => void
   list: ConversationItem[]
@@ -174,7 +173,6 @@ const Sidebar: FC<ISidebarProps> = ({
   onCurrentIdChange,
   onDeleteConversation,
   onToggleCollapse,
-  onOpenSettings,
   themePreference,
   onThemeChange,
   list,
@@ -270,7 +268,6 @@ const Sidebar: FC<ISidebarProps> = ({
           title={settingsLabel === 'tools.setting' ? 'Settings' : settingsLabel}
           onClick={() => {
             setSettingsOpen(open => !open)
-            onOpenSettings?.()
           }}
         >
           <SettingsIcon />

@@ -22,6 +22,18 @@ import AppUnavailable from '@/app/components/app-unavailable'
 import { API_KEY, APP_ID, APP_INFO, isShowPrompt, promptTemplate } from '@/config'
 import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
+import {
+  appendAnswerVariant,
+  appendQuestionVariant,
+  getAnswerGroupId,
+  getQuestionGroupId,
+  isSameAnswerGroup,
+  isSameQuestionGroup,
+  removeAnswerVariant,
+  replaceAnswerVariant,
+  setActiveAnswerVariantIndex,
+  setActiveQuestionVariantIndex,
+} from '@/utils/chat-variants'
 
 export interface IMainProps {
   params: any
@@ -297,7 +309,7 @@ const Main: FC<IMainProps> = () => {
     conversationIdChangeRequestIdRef.current = idChangeRequestId
     const isCurrentIdChange = () => conversationIdChangeRequestIdRef.current === idChangeRequestId
 
-    const shouldSyncStartedResponse = isResponding && hasStartedRespondingConversationRef.current
+    const shouldSyncStartedResponse = isSendLocked && hasStartedRespondingConversationRef.current
     if (isResponding) { cutOffCurrentResponse() }
 
     if (shouldSyncStartedResponse) {
@@ -316,6 +328,7 @@ const Main: FC<IMainProps> = () => {
     }
     // trigger handleConversationSwitch
     setCurrConversationId(id, APP_ID)
+    unlockSending()
     hideSidebar()
   }
 
@@ -486,8 +499,10 @@ const Main: FC<IMainProps> = () => {
   }, [])
 
   const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
+  const [isSendLocked, { setTrue: lockSending, setFalse: unlockSending }] = useBoolean(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const sendRequestIdRef = useRef(0)
+  const suggestedQuestionsRequestIdRef = useRef(0)
   const conversationSwitchRequestIdRef = useRef(0)
   const conversationHistorySyncRequestIdRef = useRef(0)
   const conversationIdChangeRequestIdRef = useRef(0)
@@ -506,6 +521,72 @@ const Main: FC<IMainProps> = () => {
   const resetRespondingConversationRefs = () => {
     respondingConversationIdRef.current = null
     hasStartedRespondingConversationRef.current = false
+  }
+
+  const finishResponseStream = () => {
+    abortControllerRef.current = null
+    setMessageTaskId('')
+    setRespondingFalse()
+  }
+
+  const finishCurrentResponse = () => {
+    finishResponseStream()
+    unlockSending()
+    resetRespondingConversationRefs()
+  }
+
+  const getPromotedConversationInfo = (conversation: ConversationItem) => ({
+    name: conversation.name || t('app.chat.newChatDefaultName'),
+    introduction: conversation.introduction || conversationIntroduction,
+    suggested_questions: conversation.suggested_questions || suggestedQuestions,
+  })
+
+  const promoteNewConversation = (conversationId: string, syncedConversation?: ConversationItem) => {
+    if (!conversationId) { return }
+
+    const fallbackConversation: ConversationItem = {
+      id: conversationId,
+      name: conversationName,
+      inputs: currInputs,
+      introduction: conversationIntroduction,
+      suggested_questions: suggestedQuestions,
+    }
+    const tempConversation = conversationList.find(item => item.id === '-1')
+    const promotedConversation: ConversationItem = {
+      id: conversationId,
+      name: syncedConversation?.name || tempConversation?.name || fallbackConversation.name,
+      inputs: syncedConversation?.inputs ?? tempConversation?.inputs ?? fallbackConversation.inputs,
+      introduction: syncedConversation?.introduction ?? tempConversation?.introduction ?? fallbackConversation.introduction,
+      suggested_questions: syncedConversation?.suggested_questions || tempConversation?.suggested_questions || fallbackConversation.suggested_questions,
+    }
+
+    setConversationList(currentConversationList => produce(currentConversationList, (draft) => {
+      const existingConversationIndex = draft.findIndex(item => item.id === conversationId)
+      const tempConversationIndex = draft.findIndex(item => item.id === '-1')
+
+      if (existingConversationIndex > -1) {
+        draft[existingConversationIndex] = {
+          ...draft[existingConversationIndex],
+          ...promotedConversation,
+          id: conversationId,
+        }
+        if (tempConversationIndex > -1 && tempConversationIndex !== existingConversationIndex) { draft.splice(tempConversationIndex, 1) }
+        return
+      }
+
+      if (tempConversationIndex > -1) {
+        draft[tempConversationIndex] = promotedConversation
+        return
+      }
+
+      draft.unshift(promotedConversation)
+    }))
+    setExistConversationInfo(getPromotedConversationInfo(promotedConversation))
+    setConversationIdChangeBecauseOfNew(false)
+    resetNewConversationInputs()
+    setChatNotStarted()
+    skipNextConversationSwitchChatFetchRef.current = true
+    setCurrConversationId(conversationId, APP_ID, true)
   }
 
   const syncStartedRespondingConversation = async () => {
@@ -622,6 +703,7 @@ const Main: FC<IMainProps> = () => {
     setMessageTaskId('')
     setIsRespondingConCurrCon(true)
     setRespondingFalse()
+    unlockSending()
   }
 
   const updateCurrentQA = ({
@@ -647,9 +729,36 @@ const Main: FC<IMainProps> = () => {
     setChatList(newListWithAnswer)
   }
 
+  const updateRetryAnswer = (answerGroupId: string, responseItem: ChatItem) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const currentIndex = draft.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = replaceAnswerVariant(draft[currentIndex], responseItem.answerVariantId || responseItem.id, responseItem)
+    }))
+  }
+
+  const finalizeRetryAnswer = (answerGroupId: string, responseItem: ChatItem) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const currentIndex = draft.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = replaceAnswerVariant(draft[currentIndex], responseItem.answerVariantId || responseItem.id, responseItem)
+    }))
+  }
+
+  const removeRetryAnswer = (answerGroupId: string, variantId: string) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const currentIndex = draft.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = removeAnswerVariant(draft[currentIndex], variantId)
+    }))
+  }
+
   const setSuggestedQuestionsLoading = (messageId: string) => {
     setChatList(produce(getChatList(), (draft) => {
-      const current = draft.find(item => item.id === messageId)
+      const current = draft.find(item => item.id === messageId || isSameAnswerGroup(item, messageId))
       if (!current) { return }
 
       draft.forEach((item) => {
@@ -664,11 +773,11 @@ const Main: FC<IMainProps> = () => {
 
   const applySuggestedQuestionsToAnswer = (messageId: string, questions: string[]) => {
     setChatList(produce(getChatList(), (draft) => {
-      const current = draft.find(item => item.id === messageId)
+      const current = draft.find(item => item.id === messageId || isSameAnswerGroup(item, messageId))
       if (!current) { return }
 
       draft.forEach((item) => {
-        if (item.isAnswer && item.id !== messageId) {
+        if (item.isAnswer && item.id !== current.id) {
           item.suggestedQuestions = []
           item.suggestedQuestionsLoading = false
         }
@@ -676,6 +785,17 @@ const Main: FC<IMainProps> = () => {
       current.suggestedQuestionsLoading = false
       current.suggestedQuestions = questions
     }))
+  }
+
+  const loadSuggestedQuestions = async (messageId: string, requestId: number, shouldApply = () => true) => {
+    try {
+      const nextSuggestedQuestions = await fetchSuggestedQuestions(messageId)
+      if (suggestedQuestionsRequestIdRef.current === requestId && shouldApply()) { applySuggestedQuestionsToAnswer(messageId, nextSuggestedQuestions) }
+    }
+    catch {
+      if (suggestedQuestionsRequestIdRef.current === requestId && shouldApply()) { applySuggestedQuestionsToAnswer(messageId, []) }
+      // Suggested questions are optional; a failure here should not affect the completed answer.
+    }
   }
 
   const transformToServerFile = (fileItem: any) => {
@@ -687,11 +807,14 @@ const Main: FC<IMainProps> = () => {
     }
   }
 
-  const handleSend = async (message: string, files?: VisionFile[]) => {
-    if (isResponding) {
+  const handleSend = (message: string, files?: VisionFile[]) => {
+    if (isSendLocked) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
-      return
+      return false
     }
+    suggestedQuestionsRequestIdRef.current += 1
+    const currentConversationId = getCurrConversationId()
+    const isSendingNewConversation = currentConversationId === '-1'
     const toServerInputs: Record<string, any> = {}
     if (currInputs) {
       Object.keys(currInputs).forEach((key) => {
@@ -707,7 +830,7 @@ const Main: FC<IMainProps> = () => {
     const data: Record<string, any> = {
       inputs: toServerInputs,
       query: message,
-      conversation_id: isNewConversation ? null : currConversationId,
+      conversation_id: isSendingNewConversation ? null : currentConversationId,
     }
 
     if (files && files?.length > 0) {
@@ -758,15 +881,16 @@ const Main: FC<IMainProps> = () => {
     }
     let hasSetResponseId = false
 
-    const prevTempNewConversationId = getCurrConversationId() || '-1'
+    const prevTempNewConversationId = currentConversationId || '-1'
     let tempNewConversationId = ''
     const requestId = sendRequestIdRef.current + 1
     sendRequestIdRef.current = requestId
     const isCurrentRequest = () => sendRequestIdRef.current === requestId
 
-    respondingConversationIdRef.current = isNewConversation ? null : currConversationId
+    respondingConversationIdRef.current = isSendingNewConversation ? null : currentConversationId
     hasStartedRespondingConversationRef.current = false
 
+    lockSending()
     setRespondingTrue()
     sendChatMessage(data, {
       getAbortController: (abortController) => {
@@ -813,9 +937,7 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentRequest()) { return }
 
         if (hasError) {
-          abortControllerRef.current = null
-          setRespondingFalse()
-          resetRespondingConversationRefs()
+          finishCurrentResponse()
           setChatList(produce(getChatList(), (draft) => {
             const placeholderIndex = draft.findIndex(item => item.id === placeholderAnswerId)
             if (placeholderIndex > -1) { draft.splice(placeholderIndex, 1) }
@@ -827,53 +949,56 @@ const Main: FC<IMainProps> = () => {
         if (responseMessageId) { setSuggestedQuestionsLoading(responseMessageId) }
 
         const shouldSyncNewConversation = getConversationIdChangeBecauseOfNew()
+        const startedConversationId = tempNewConversationId || respondingConversationIdRef.current || ''
+        finishResponseStream()
+
+        let nextConversationId = startedConversationId
         let syncedConversations: ConversationItem[] | undefined
-        let hasSyncedConversationHistory = !shouldSyncNewConversation
-        try {
-          if (shouldSyncNewConversation) {
+
+        if (shouldSyncNewConversation && !nextConversationId) {
+          try {
             syncedConversations = await syncConversationHistory({
-              autoGenerateNameForId: tempNewConversationId || respondingConversationIdRef.current,
+              autoGenerateNameForId: startedConversationId || null,
             })
-            hasSyncedConversationHistory = true
+            nextConversationId = syncedConversations?.[0]?.id || ''
+          }
+          catch (error: any) {
+            notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
           }
         }
-        catch (error: any) {
-          hasSyncedConversationHistory = false
-          notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
-        }
+
         if (!isCurrentRequest()) { return }
 
-        const syncedConversationId = shouldSyncNewConversation ? syncedConversations?.[0]?.id : undefined
-        const nextConversationId = tempNewConversationId || respondingConversationIdRef.current || syncedConversationId
-        const nextConversation = syncedConversations?.find(item => item.id === nextConversationId)
-        setConversationIdChangeBecauseOfNew(false)
-        resetNewConversationInputs()
-        setChatNotStarted()
-        if (nextConversation) {
-          setExistConversationInfo({
-            name: nextConversation.name || t('app.chat.newChatDefaultName'),
-            introduction: nextConversation.introduction || conversationIntroduction,
-            suggested_questions: nextConversation.suggested_questions || suggestedQuestions,
-          })
-        }
-        if (nextConversationId) {
-          if (shouldSyncNewConversation && hasSyncedConversationHistory) { skipNextConversationSwitchChatFetchRef.current = true }
-          setCurrConversationId(nextConversationId, APP_ID, true)
-        }
-        setRespondingFalse()
-        resetRespondingConversationRefs()
-        abortControllerRef.current = null
-        setMessageTaskId('')
+        const suggestedRequestId = suggestedQuestionsRequestIdRef.current + 1
+        suggestedQuestionsRequestIdRef.current = suggestedRequestId
 
-        if (responseMessageId) {
-          try {
-            const nextSuggestedQuestions = await fetchSuggestedQuestions(responseMessageId)
-            if (isCurrentRequest()) { applySuggestedQuestionsToAnswer(responseMessageId, nextSuggestedQuestions) }
-          }
-          catch {
-            if (isCurrentRequest()) { applySuggestedQuestionsToAnswer(responseMessageId, []) }
-            // Suggested questions are optional; a failure here should not affect the completed answer.
-          }
+        if (responseMessageId) { void loadSuggestedQuestions(responseMessageId, suggestedRequestId) }
+
+        if (shouldSyncNewConversation && !nextConversationId) { return }
+
+        const nextConversation = syncedConversations?.find(item => item.id === nextConversationId)
+        if (shouldSyncNewConversation && nextConversationId) { promoteNewConversation(nextConversationId, nextConversation) }
+
+        unlockSending()
+        resetRespondingConversationRefs()
+
+        if (shouldSyncNewConversation && nextConversationId) {
+          const conversationIdToSync = nextConversationId
+          void (async () => {
+            let latestConversations: ConversationItem[] | undefined
+            try {
+              latestConversations = await syncConversationHistory({
+                autoGenerateNameForId: conversationIdToSync,
+              })
+            }
+            catch (error: any) {
+              notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
+              return
+            }
+
+            const syncedConversation = latestConversations?.find(item => item.id === conversationIdToSync)
+            if (syncedConversation && getCurrConversationId() === conversationIdToSync) { setExistConversationInfo(getPromotedConversationInfo(syncedConversation)) }
+          })()
         }
       },
       onFile(file) {
@@ -989,12 +1114,8 @@ const Main: FC<IMainProps> = () => {
       onError(_message, code) {
         if (!isCurrentRequest()) { return }
 
-        abortControllerRef.current = null
-        setMessageTaskId('')
-        setRespondingFalse()
+        finishCurrentResponse()
         if (code === 'aborted') { return }
-
-        resetRespondingConversationRefs()
 
         // role back placeholder answer
         setChatList(produce(getChatList(), (draft) => {
@@ -1077,16 +1198,332 @@ const Main: FC<IMainProps> = () => {
         }))
       },
     })
+    return true
+  }
+
+  const handleRetry = (answer: ChatItem, overrideQuestionContent?: string, baseChatList?: ChatItem[]) => {
+    if (isSendLocked) {
+      notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
+      return
+    }
+
+    const currentChatList = baseChatList || getChatList()
+    const answerGroupId = getAnswerGroupId(answer)
+    const answerIndex = currentChatList.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+    if (answerIndex === -1) { return }
+
+    const questionItem = [...currentChatList.slice(0, answerIndex)].reverse().find(item => !item.isAnswer)
+    const retryQuery = overrideQuestionContent?.trim() || questionItem?.content || ''
+    if (!retryQuery) {
+      notify({ type: 'error', message: 'Unable to retry this message' })
+      return
+    }
+
+    suggestedQuestionsRequestIdRef.current += 1
+
+    const currentConversationId = getCurrConversationId()
+    const retryVariantId = `answer-retry-${Date.now()}`
+    const responseItem: ChatItem = {
+      id: retryVariantId,
+      answerVariantId: retryVariantId,
+      content: '',
+      agent_thoughts: [],
+      message_files: [],
+      isAnswer: true,
+      isRetrying: true,
+    }
+
+    setChatList(produce(currentChatList, (draft) => {
+      draft.forEach((item) => {
+        if (item.isAnswer) {
+          item.suggestedQuestions = []
+          item.suggestedQuestionsLoading = false
+        }
+      })
+
+      const currentIndex = draft.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = appendAnswerVariant(draft[currentIndex], responseItem)
+    }))
+
+    const retryFiles = (questionItem?.message_files || []).filter(file => file.transfer_method && (file.upload_file_id || file.url))
+    const data: Record<string, any> = {
+      inputs: {},
+      query: retryQuery,
+      conversation_id: currentConversationId === '-1' ? null : currentConversationId,
+    }
+
+    if (retryFiles.length > 0) {
+      data.files = retryFiles.map((item) => {
+        if (item.transfer_method === TransferMethod.local_file) {
+          return {
+            ...item,
+            url: '',
+          }
+        }
+        return item
+      })
+    }
+
+    let isAgentMode = false
+    let hasSetResponseId = false
+    const requestId = sendRequestIdRef.current + 1
+    sendRequestIdRef.current = requestId
+    const isCurrentRequest = () => sendRequestIdRef.current === requestId
+    const isStillOnConversation = () => getCurrConversationId() === currentConversationId
+
+    respondingConversationIdRef.current = currentConversationId === '-1' ? null : currentConversationId
+    hasStartedRespondingConversationRef.current = false
+
+    lockSending()
+    setRespondingTrue()
+    sendChatMessage(data, {
+      getAbortController: (abortController) => {
+        if (isCurrentRequest()) {
+          abortControllerRef.current = abortController
+          return
+        }
+
+        abortController.abort()
+      },
+      onData: (message: string, _isFirstMessage: boolean, { conversationId: newConversationId, messageId, taskId }: any) => {
+        if (!isCurrentRequest()) { return }
+
+        if (message || messageId || newConversationId) { markRespondingConversationStarted(newConversationId || respondingConversationIdRef.current || undefined) }
+
+        if (!isAgentMode) {
+          responseItem.content = responseItem.content + message
+        }
+        else {
+          const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
+          if (lastThought) { lastThought.thought = lastThought.thought + message }
+        }
+        if (messageId && !hasSetResponseId) {
+          responseItem.id = messageId
+          hasSetResponseId = true
+        }
+
+        setMessageTaskId(taskId)
+        if (!isStillOnConversation()) {
+          setIsRespondingConCurrCon(false)
+          return
+        }
+
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      async onCompleted(hasError?: boolean) {
+        if (!isCurrentRequest()) { return }
+
+        if (hasError) {
+          finishCurrentResponse()
+          removeRetryAnswer(answerGroupId, retryVariantId)
+          return
+        }
+
+        responseItem.isRetrying = false
+        finalizeRetryAnswer(answerGroupId, responseItem)
+
+        const responseMessageId = hasSetResponseId ? responseItem.id : ''
+        if (responseMessageId) { setSuggestedQuestionsLoading(responseMessageId) }
+
+        finishCurrentResponse()
+
+        const suggestedRequestId = suggestedQuestionsRequestIdRef.current + 1
+        suggestedQuestionsRequestIdRef.current = suggestedRequestId
+
+        if (responseMessageId) { void loadSuggestedQuestions(responseMessageId, suggestedRequestId, isStillOnConversation) }
+      },
+      onFile(file) {
+        if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
+        if (lastThought) { lastThought.message_files = [...(lastThought as any).message_files, { ...file }] }
+
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      onThought(thought) {
+        if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        isAgentMode = true
+        const response = responseItem as any
+        if (thought.message_id && !hasSetResponseId) {
+          response.id = thought.message_id
+          hasSetResponseId = true
+        }
+        if (response.agent_thoughts.length === 0) {
+          response.agent_thoughts.push(thought)
+        }
+        else {
+          const lastThought = response.agent_thoughts[response.agent_thoughts.length - 1]
+          if (lastThought.id === thought.id) {
+            thought.thought = lastThought.thought
+            thought.message_files = lastThought.message_files
+            responseItem.agent_thoughts![response.agent_thoughts.length - 1] = thought
+          }
+          else {
+            responseItem.agent_thoughts!.push(thought)
+          }
+        }
+        if (!isStillOnConversation()) {
+          setIsRespondingConCurrCon(false)
+          return false
+        }
+
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      onMessageEnd: (messageEnd) => {
+        if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        if (messageEnd.id && !hasSetResponseId) {
+          responseItem.id = messageEnd.id
+          hasSetResponseId = true
+        }
+
+        if (messageEnd.metadata?.annotation_reply) {
+          responseItem.id = messageEnd.id
+          responseItem.annotation = ({
+            id: messageEnd.metadata.annotation_reply.id,
+            authorName: messageEnd.metadata.annotation_reply.account.name,
+          } as AnnotationType)
+        }
+
+        finalizeRetryAnswer(answerGroupId, responseItem)
+      },
+      onMessageReplace: (messageReplace) => {
+        if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(messageReplace.conversation_id || respondingConversationIdRef.current || undefined)
+        responseItem.content = messageReplace.answer
+        finalizeRetryAnswer(answerGroupId, responseItem)
+      },
+      onError(_message, code) {
+        if (!isCurrentRequest()) { return }
+
+        finishCurrentResponse()
+        if (code === 'aborted') { return }
+
+        removeRetryAnswer(answerGroupId, retryVariantId)
+      },
+      onWorkflowStarted: ({ workflow_run_id }) => {
+        if (!isCurrentRequest()) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        responseItem.workflow_run_id = workflow_run_id
+        responseItem.workflowProcess = {
+          status: WorkflowRunningStatus.Running,
+          tracing: [],
+        }
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      onWorkflowFinished: ({ data }) => {
+        if (!isCurrentRequest()) { return }
+        if (!responseItem.workflowProcess) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        responseItem.workflowProcess!.status = data.status as WorkflowRunningStatus
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      onNodeStarted: ({ data }) => {
+        if (!isCurrentRequest()) { return }
+        if (!responseItem.workflowProcess?.tracing) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        responseItem.workflowProcess!.tracing!.push(data as any)
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+      onNodeFinished: ({ data }) => {
+        if (!isCurrentRequest()) { return }
+        if (!responseItem.workflowProcess?.tracing) { return }
+
+        markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
+
+        const currentIndex = responseItem.workflowProcess!.tracing!.findIndex(item => item.node_id === data.node_id)
+        if (currentIndex === -1) { return }
+
+        responseItem.workflowProcess!.tracing[currentIndex] = data as any
+        updateRetryAnswer(answerGroupId, responseItem)
+      },
+    })
+  }
+
+  const handleQuestionRetry = (question: ChatItem, content: string) => {
+    if (isSendLocked) {
+      notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
+      return
+    }
+
+    const currentChatList = getChatList()
+    const questionIndex = currentChatList.findIndex(item => item.id === question.id)
+    if (questionIndex === -1) { return }
+
+    const questionGroupId = getQuestionGroupId(question)
+    const questionVariantId = `question-resend-${Date.now()}`
+    const nextQuestionVariant: ChatItem = {
+      ...question,
+      id: questionVariantId,
+      questionVariantId,
+      content,
+      isAnswer: false,
+    }
+    const nextChatList = produce(currentChatList, (draft) => {
+      const currentQuestionIndex = draft.findIndex(item => !item.isAnswer && isSameQuestionGroup(item, questionGroupId))
+      if (currentQuestionIndex === -1) { return }
+
+      draft[currentQuestionIndex] = appendQuestionVariant(draft[currentQuestionIndex], nextQuestionVariant)
+    })
+
+    const nextQuestionIndex = currentChatList.findIndex((item, index) => index > questionIndex && !item.isAnswer)
+    const answerSearchEnd = nextQuestionIndex === -1 ? currentChatList.length : nextQuestionIndex
+    const nextAnswer = currentChatList.slice(questionIndex + 1, answerSearchEnd).find(item => item.isAnswer && !item.feedbackDisabled)
+
+    if (nextAnswer) {
+      handleRetry(nextAnswer, content, nextChatList)
+      return
+    }
+
+    setChatList(nextChatList)
+    handleSend(content, question.message_files || [])
+  }
+
+  const handleQuestionVariantChange = (question: ChatItem, index: number) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const questionGroupId = getQuestionGroupId(question)
+      const currentIndex = draft.findIndex(item => !item.isAnswer && isSameQuestionGroup(item, questionGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = setActiveQuestionVariantIndex(draft[currentIndex], index)
+    }))
+  }
+
+  const handleAnswerVariantChange = (answer: ChatItem, index: number) => {
+    setChatList(produce(getChatList(), (draft) => {
+      const answerGroupId = getAnswerGroupId(answer)
+      const currentIndex = draft.findIndex(item => item.isAnswer && isSameAnswerGroup(item, answerGroupId))
+      if (currentIndex === -1) { return }
+
+      draft[currentIndex] = setActiveAnswerVariantIndex(draft[currentIndex], index)
+    }))
   }
 
   const handleFeedback = async (messageId: string, feedback: Feedbacktype) => {
     await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: { rating: feedback.rating } })
     const newChatList = chatList.map((item) => {
-      if (item.id === messageId) {
-        return {
-          ...item,
+      if (item.isAnswer && isSameAnswerGroup(item, messageId)) {
+        const targetVariant = item.answerVariants?.find(variant => variant.id === messageId || variant.answerVariantId === messageId) || item
+        return replaceAnswerVariant(item, messageId, {
+          ...targetVariant,
           feedback,
-        }
+        })
       }
       return item
     })
@@ -1103,9 +1540,6 @@ const Main: FC<IMainProps> = () => {
         onCurrentIdChange={handleConversationIdChange}
         onDeleteConversation={handleDeleteConversation}
         onToggleCollapse={isMobile ? undefined : collapseSidebar}
-        onOpenSettings={() => {
-          mainPanelRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-        }}
         themePreference={themePreference}
         onThemeChange={setThemePreference}
         currentId={currConversationId}
@@ -1141,6 +1575,7 @@ const Main: FC<IMainProps> = () => {
           >
             <Header
               title={APP_INFO.title}
+              conversationName={conversationName}
               isMobile={isMobile}
               isSidebarCollapsed={isSidebarCollapsed}
               onShowSideBar={showSidebar}
@@ -1173,7 +1608,12 @@ const Main: FC<IMainProps> = () => {
                         chatList={chatList}
                         onSend={handleSend}
                         onFeedback={handleFeedback}
+                        onRetry={handleRetry}
+                        onQuestionRetry={handleQuestionRetry}
+                        onQuestionVariantChange={handleQuestionVariantChange}
+                        onVariantChange={handleAnswerVariantChange}
                         isResponding={isResponding}
+                        isSendLocked={isSendLocked}
                         checkCanSend={checkCanSend}
                         visionConfig={visionConfig}
                         fileConfig={fileConfig}

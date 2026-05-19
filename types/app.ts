@@ -93,8 +93,17 @@ export interface IChatItem {
 
 export type ChatItem = IChatItem & {
   isError?: boolean
+  isRetrying?: boolean
   workflow_run_id?: string
   workflowProcess?: WorkflowProcess
+  questionVariantId?: string
+  questionGroupId?: string
+  activeQuestionVariantIndex?: number
+  questionVariants?: ChatItem[]
+  answerVariantId?: string
+  answerGroupId?: string
+  activeAnswerVariantIndex?: number
+  answerVariants?: ChatItem[]
 }
 
 export interface ResponseHolder {}
