@@ -1519,12 +1519,20 @@ const Main: FC<IMainProps> = () => {
 
   if (!APP_ID || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
+  const desktopSidebarClassName = [
+    'flex shrink-0 flex-col overflow-hidden transition-[width,opacity] duration-200 ease-in-out',
+    isSidebarCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[236px] opacity-100',
+  ].join(' ')
+
   return (
     <div className={`app-shell theme-${effectiveTheme} flex h-screen flex-col`}>
       <div className="flex min-h-0 flex-1">
         {/* sidebar */}
-        {!isMobile && !isSidebarCollapsed && (
-          <div className="flex w-[236px] shrink-0 flex-col transition-all duration-200 ease-in-out">
+        {!isMobile && (
+          <div
+            className={desktopSidebarClassName}
+            aria-hidden={isSidebarCollapsed}
+          >
             {renderSidebar()}
           </div>
         )}
