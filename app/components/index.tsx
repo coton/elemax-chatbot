@@ -242,7 +242,7 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentSwitch()) { return }
 
         const { data } = res
-        const historyMessages = Array.isArray(data) ? [...data].reverse() : []
+        const historyMessages = Array.isArray(data) ? [...data] : []
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
 
         historyMessages.forEach((item: any) => {
