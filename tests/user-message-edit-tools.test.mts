@@ -2,67 +2,86 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const questionComponent = readFileSync('app/components/chat/question/index.tsx', 'utf8')
+const answerComponent = readFileSync('app/components/chat/answer/index.tsx', 'utf8')
 const chatComponent = readFileSync('app/components/chat/index.tsx', 'utf8')
 const mainComponent = readFileSync('app/components/index.tsx', 'utf8')
 
-assert.match(
+assert.doesNotMatch(
   questionComponent,
-  /className="mr-2 gap-1 flex"[\s\S]*style=\{\{ right: toolRightOffset \}\}/,
-  'user message tools should render as the left-side hover actionbar requested by design',
+  /group-hover:flex|components-actionbar|action-btn|toolRightOffset|ResizeObserver/,
+  'user messages should not render any hover quick-tool actionbar',
+)
+
+assert.doesNotMatch(
+  questionComponent,
+  /copy-to-clipboard|CopyIcon|RetryQuestionIcon|aria-label="Copy message"|aria-label="Edit and resend message"/,
+  'user messages should not expose copy or edit/resend hover tools',
+)
+
+assert.doesNotMatch(
+  questionComponent,
+  /isEditing|setIsEditing|Cancel|Resend/,
+  'user message inline edit controls should be removed with the hover quick tools',
 )
 
 assert.match(
   questionComponent,
-  /setToolRightOffset\(width \+ 8\)/,
-  'user message tools should stay visible beside dynamic-width bubbles',
+  /onVariantChange\?: \(question: ChatItem, index: number\) => void/,
+  'question messages should still expose history switching',
 )
 
 assert.match(
   questionComponent,
-  /group relative mr-4 flex max-w-full items-start overflow-visible pl-14/,
-  'user message hover tools should not be clipped by the message wrapper',
+  /variantCount > 1[\s\S]*aria-label="Previous question"[\s\S]*aria-label="Next question"/,
+  'question history navigation should remain available when variants exist',
 )
 
 assert.match(
-  questionComponent,
-  /setIsEditing\(true\)[\s\S]*Cancel[\s\S]*Resend/,
-  'edit icon should expand an inline editor with Cancel and Resend controls',
+  answerComponent,
+  /answer-actionbar[\s\S]*group-hover:flex/,
+  'assistant message hover tools should remain unchanged',
+)
+
+assert.doesNotMatch(
+  answerComponent,
+  /RegenerateIcon|aria-label="Retry answer"/,
+  'assistant hover tools should not show the retry icon',
 )
 
 assert.match(
-  questionComponent,
-  /isEditing \? 'w-0 grow' : ''/,
-  'inline question editor should expand to the available conversation width',
+  answerComponent,
+  /onRetry\?: \(answer: ChatItem\) => void/,
+  'assistant retry prop should remain available even though the hover icon is hidden',
 )
 
 assert.match(
   chatComponent,
-  /onQuestionRetry\?: \(question: ChatItem, content: string\) => void/,
-  'question resend should pass edited content to the parent',
+  /onRetry\?: \(answer: ChatItem\) => void[\s\S]*onRetry={onRetry}/,
+  'chat should keep forwarding assistant retry logic',
 )
 
 assert.match(
+  mainComponent,
+  /handleRetry = \(answer: ChatItem[\s\S]*onRetry={handleRetry}/,
+  'parent should keep assistant retry logic wired',
+)
+
+assert.doesNotMatch(
   chatComponent,
-  /onQuestionVariantChange\?: \(question: ChatItem, index: number\) => void/,
-  'question messages should expose history switching',
+  /onQuestionRetry/,
+  'chat should not pass user-message edit/resend callbacks',
+)
+
+assert.doesNotMatch(
+  mainComponent,
+  /handleQuestionRetry|onQuestionRetry=/,
+  'parent should not wire user-message edit/resend handlers',
 )
 
 assert.match(
   mainComponent,
-  /handleQuestionRetry = \(question: ChatItem, content: string\)/,
-  'parent should handle edit resend after Question emits Resend',
-)
-
-assert.match(
-  mainComponent,
-  /baseChatList = questionIndex === -1[\s\S]*currentChatList\.filter\(\(_, index\) => index !== questionIndex && index !== attachedAnswerIndex\)/,
-  'question resend should remove the original user message and attached answer from their old position',
-)
-
-assert.match(
-  mainComponent,
-  /handleSend\(content, question\.message_files \|\| \[\], \{\s*baseChatList,[\s\S]*answerHistory: attachedAnswer \? \[attachedAnswer\] : \[\],\s*\}\)/,
-  'question resend should append a new bottom message while carrying the attached answer as history',
+  /handleQuestionVariantChange = \(question: ChatItem, index: number\)/,
+  'parent should continue to handle question history switching',
 )
 
 assert.doesNotMatch(

@@ -47,7 +47,6 @@ export interface IChatProps {
   isHideSendInput?: boolean
   onFeedback?: FeedbackFunc
   onRetry?: (answer: ChatItem) => void
-  onQuestionRetry?: (question: ChatItem, content: string) => void
   onQuestionVariantChange?: (question: ChatItem, index: number) => void
   onVariantChange?: (answer: ChatItem, index: number) => void
   checkCanSend?: () => boolean
@@ -67,7 +66,6 @@ const Chat: FC<IChatProps> = ({
   isHideSendInput = false,
   onFeedback,
   onRetry,
-  onQuestionRetry,
   onQuestionVariantChange,
   onVariantChange,
   checkCanSend,
@@ -312,8 +310,6 @@ const Chat: FC<IChatProps> = ({
                   ? item.message_files.map(item => item.url)
                   : []
               }
-              isSendLocked={isSendLocked}
-              onRetry={onQuestionRetry}
               onVariantChange={onQuestionVariantChange}
             />
           )

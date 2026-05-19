@@ -32,12 +32,6 @@ const CopyIcon = () => (
   </svg>
 )
 
-const RegenerateIcon = () => (
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
-    <path d="M22 12C22 17.5228 17.5229 22 12 22C6.4772 22 2 17.5228 2 12C2 6.47715 6.4772 2 12 2V4C7.5817 4 4 7.58172 4 12C4 16.4183 7.5817 20 12 20C16.4183 20 20 16.4183 20 12C20 9.25022 18.6127 6.82447 16.4998 5.38451L16.5 8H14.5V2L20.5 2V4L18.0008 3.99989C20.4293 5.82434 22 8.72873 22 12Z" />
-  </svg>
-)
-
 const ChevronRightIcon = ({ className = '' }: { className?: string }) => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} data-icon="ChevronRight" aria-hidden="true">
     <g id="chevron-right">
@@ -63,10 +57,8 @@ const Answer: FC<IAnswerProps> = ({
   item,
   feedbackDisabled = false,
   onFeedback,
-  onRetry,
   onVariantChange,
   isResponding,
-  isSendLocked,
   allToolIcons,
 }) => {
   const activeItem = getActiveAnswerVariant(item) as ChatItem
@@ -203,11 +195,6 @@ const Answer: FC<IAnswerProps> = ({
                   <button type="button" className="action-btn action-btn-m" aria-label="Copy message" onClick={handleCopy}>
                     <CopyIcon />
                   </button>
-                  {feedbackActionEnabled && (
-                    <button type="button" className="action-btn action-btn-m" disabled={isSendLocked} aria-label="Retry answer" onClick={() => onRetry?.(item)}>
-                      <RegenerateIcon />
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

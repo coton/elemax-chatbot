@@ -1463,31 +1463,6 @@ const Main: FC<IMainProps> = () => {
     })
   }
 
-  const handleQuestionRetry = (question: ChatItem, content: string) => {
-    if (isSendLocked) {
-      notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
-      return
-    }
-
-    const currentChatList = getChatList()
-    const questionGroupId = getQuestionGroupId(question)
-    const questionIndex = currentChatList.findIndex(item => !item.isAnswer && isSameQuestionGroup(item, questionGroupId))
-    const nextQuestionIndex = currentChatList.findIndex((item, index) => index > questionIndex && !item.isAnswer)
-    const answerSearchEnd = nextQuestionIndex === -1 ? currentChatList.length : nextQuestionIndex
-    const attachedAnswerIndex = questionIndex === -1
-      ? -1
-      : currentChatList.findIndex((item, index) => index > questionIndex && index < answerSearchEnd && item.isAnswer && !item.feedbackDisabled)
-    const attachedAnswer = attachedAnswerIndex === -1 ? undefined : currentChatList[attachedAnswerIndex]
-    const baseChatList = questionIndex === -1
-      ? currentChatList
-      : currentChatList.filter((_, index) => index !== questionIndex && index !== attachedAnswerIndex)
-
-    handleSend(content, question.message_files || [], {
-      baseChatList,
-      answerHistory: attachedAnswer ? [attachedAnswer] : [],
-    })
-  }
-
   const handleQuestionVariantChange = (question: ChatItem, index: number) => {
     setChatList(produce(getChatList(), (draft) => {
       const questionGroupId = getQuestionGroupId(question)
@@ -1602,7 +1577,6 @@ const Main: FC<IMainProps> = () => {
                         onSend={handleSend}
                         onFeedback={handleFeedback}
                         onRetry={handleRetry}
-                        onQuestionRetry={handleQuestionRetry}
                         onQuestionVariantChange={handleQuestionVariantChange}
                         onVariantChange={handleAnswerVariantChange}
                         isResponding={isResponding}
