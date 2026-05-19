@@ -28,7 +28,7 @@ const Question: FC<IQuestionProps> = ({ id, content, userAvatarInitial = 'U', us
           </div>
         </div>
       </div>
-      <div className='h-10 w-10 shrink-0 overflow-hidden rounded-full border border-black/5 bg-[#f2f4f7] text-center text-sm font-semibold leading-10 text-gray-600'>
+      <div className='h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#f2f4f7] text-center text-sm font-semibold leading-10 text-gray-600'>
         {userAvatarUrl
           ? (
             <img

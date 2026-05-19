@@ -74,7 +74,7 @@ const Main: FC<IMainProps> = () => {
     transfer_methods: [TransferMethod.local_file],
   })
   const [fileConfig, setFileConfig] = useState<FileUpload | undefined>()
-  const [themePreference, setThemePreference] = useState<ThemePreference>('system')
+  const [themePreference, setThemePreference] = useState<ThemePreference>('dark')
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light')
   const [isThemeReady, setIsThemeReady] = useState(false)
   const effectiveTheme = themePreference === 'system' ? systemTheme : themePreference
@@ -98,14 +98,16 @@ const Main: FC<IMainProps> = () => {
   }, [])
 
   useEffect(() => {
+    document.documentElement.classList.remove('theme-light', 'theme-dark')
+    document.documentElement.classList.add(`theme-${effectiveTheme}`)
     document.documentElement.dataset.theme = effectiveTheme
     document.documentElement.style.colorScheme = effectiveTheme
     if (isThemeReady) { globalThis.localStorage?.setItem(THEME_STORAGE_KEY, themePreference) }
   }, [effectiveTheme, isThemeReady, themePreference])
 
   useEffect(() => {
-    if (APP_INFO?.title) { document.title = APP_INFO.title }
-  }, [APP_INFO?.title])
+    document.title = 'Max AI'
+  }, [])
 
   // onData change thought (the produce obj). https://github.com/immerjs/immer/issues/576
   useEffect(() => {

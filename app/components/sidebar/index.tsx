@@ -1,12 +1,11 @@
 import React from 'react'
 import type { FC } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  ChatBubbleOvalLeftEllipsisIcon,
-  PencilSquareIcon,
   TrashIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisSolidIcon } from '@heroicons/react/24/solid'
 import Button from '@/app/components/base/button'
 // import Card from './card'
 import type { ConversationItem } from '@/types/app'
@@ -21,6 +20,12 @@ export type ThemePreference = 'system' | 'light' | 'dark'
 const CollapseSidebarIcon = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-[18px] w-[18px]">
     <path d="M21 3C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H21ZM20 5H4V19H20V5ZM8 7V17H6V7H8Z" />
+  </svg>
+)
+
+const NewChatIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon mr-1 h-4 w-4">
+    <path d="M16.7574 2.99678L14.7574 4.99678H5V18.9968H19V9.23943L21 7.23943V19.9968C21 20.5491 20.5523 20.9968 20 20.9968H4C3.44772 20.9968 3 20.5491 3 19.9968V3.99678C3 3.4445 3.44772 2.99678 4 2.99678H16.7574ZM20.4853 2.09729L21.8995 3.5115L12.7071 12.7039L11.2954 12.7064L11.2929 11.2897L20.4853 2.09729Z" />
   </svg>
 )
 
@@ -40,9 +45,11 @@ const themeButtonClass = (active: boolean) => classNames(
 const SettingsMenu = ({
   themePreference,
   onThemeChange,
+  onOpenAbout,
 }: {
   themePreference: ThemePreference
   onThemeChange: (theme: ThemePreference) => void
+  onOpenAbout: () => void
 }) => (
   <div className="w-[224px] rounded-xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-lg backdrop-blur-sm">
     <div className="p-1">
@@ -86,10 +93,68 @@ const SettingsMenu = ({
     </div>
     <div className="w-full h-[0.5px] bg-divider-regular shrink-0 my-0" />
     <div className="p-1">
-      <div className="system-md-regular cursor-pointer rounded-lg px-3 py-1.5 text-text-secondary hover:bg-state-base-hover">About</div>
+      <button
+        type="button"
+        className="system-md-regular w-full cursor-pointer rounded-lg px-3 py-1.5 text-left text-text-secondary hover:bg-state-base-hover"
+        onClick={onOpenAbout}
+      >
+        About
+      </button>
     </div>
   </div>
 )
+
+const AboutDialog = ({
+  onClose,
+}: {
+  onClose: () => void
+}) => {
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { onClose() }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px]"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-dialog-title"
+        className="relative w-full max-w-[360px] overflow-hidden rounded-2xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-2xl backdrop-blur-xl"
+        onClick={event => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-text-tertiary hover:bg-state-base-hover hover:text-text-secondary"
+          aria-label="Close about dialog"
+          onClick={onClose}
+        >
+          <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <div className="flex flex-col items-center gap-4 px-4 pb-8 pt-10">
+          <span className="relative flex h-14 w-14 grow-0 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-[0.5px] border-divider-regular text-[32px]">
+            <img
+              className="h-full w-full object-contain"
+              alt="app icon"
+              src="/elemax-logo-170x170px.png"
+            />
+          </span>
+          <div id="about-dialog-title" className="system-xl-semibold text-text-secondary">Max AI</div>
+          <div className="system-xs-regular text-text-tertiary" />
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
 
 export interface ISidebarProps {
   currentId: string
@@ -117,6 +182,7 @@ const Sidebar: FC<ISidebarProps> = ({
   const { t } = useTranslation()
   const settingsLabel = t('tools.setting')
   const [settingsOpen, setSettingsOpen] = React.useState(false)
+  const [aboutOpen, setAboutOpen] = React.useState(false)
   return (
     <div
       className="app-sidebar flex w-full grow flex-col rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
@@ -144,9 +210,9 @@ const Sidebar: FC<ISidebarProps> = ({
         <div className="shrink-0 px-3 py-4">
           <Button
             onClick={() => { onCurrentIdChange('-1') }}
-            className="group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[#d6e4ff] !bg-[#eff6ff] text-primary-600 items-center !text-sm !font-medium hover:!bg-[#dbeafe]"
+            className="new-chat-button group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[0.5px] !border-state-accent-border !bg-state-accent-hover !px-[14px] !py-0 text-text-accent items-center !text-sm !font-medium hover:!bg-state-accent-hover-alt"
           >
-            <PencilSquareIcon className="mr-2 h-4 w-4" /> {t('app.chat.newChat')}
+            <NewChatIcon /> Start New chat
           </Button>
         </div>
       )}
@@ -154,8 +220,6 @@ const Sidebar: FC<ISidebarProps> = ({
       <nav className="h-0 flex-1 space-y-0.5 overflow-y-auto px-3 pt-4">
         {list.map((item) => {
           const isCurrent = item.id === currentId
-          const ItemIcon
-            = isCurrent ? ChatBubbleOvalLeftEllipsisSolidIcon : ChatBubbleOvalLeftEllipsisIcon
           return (
             <div
               onClick={() => onCurrentIdChange(item.id)}
@@ -168,20 +232,11 @@ const Sidebar: FC<ISidebarProps> = ({
               )}
             >
               <div className="flex min-w-0 flex-1 items-center">
-                <ItemIcon
-                  className={classNames(
-                    isCurrent
-                      ? 'text-primary-600'
-                      : 'text-gray-400 group-hover:text-gray-500',
-                    'mr-2 h-4 w-4 flex-shrink-0',
-                  )}
-                  aria-hidden="true"
-                />
                 <span className="truncate py-1">{item.name}</span>
               </div>
               <button
                 type="button"
-                className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 opacity-0 pointer-events-none hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto"
+                className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-text-tertiary opacity-0 pointer-events-none hover:bg-state-destructive-hover hover:text-text-destructive group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto"
                 aria-label={t('app.chat.deleteConversation')}
                 title={t('app.chat.deleteConversation')}
                 onClick={(e) => {
@@ -201,6 +256,10 @@ const Sidebar: FC<ISidebarProps> = ({
             <SettingsMenu
               themePreference={themePreference}
               onThemeChange={onThemeChange}
+              onOpenAbout={() => {
+                setSettingsOpen(false)
+                setAboutOpen(true)
+              }}
             />
           </div>
         )}
@@ -216,11 +275,14 @@ const Sidebar: FC<ISidebarProps> = ({
         >
           <SettingsIcon />
         </button>
-        <div className="flex items-center gap-2 text-xs font-normal text-gray-400">
+        <div className="flex items-center gap-2 text-[10px] font-normal text-gray-500">
           <span>POWERED BY</span>
           <img src="/logo-32x32.png" alt="Powered by logo" className="h-5 w-5" />
         </div>
       </div>
+      {aboutOpen && (
+        <AboutDialog onClose={() => setAboutOpen(false)} />
+      )}
     </div>
   )
 }

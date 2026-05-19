@@ -21,32 +21,48 @@ const SSOCallbackPage = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const navigateToHome = ({ session, decorateUrl }: AuthNavigateParams) => {
+    let nextUrl: string | null = null
+
+    const setNextUrl = ({ session, decorateUrl }: AuthNavigateParams) => {
       if (session?.currentTask) {
         return
       }
 
-      const url = decorateUrl('/')
+      nextUrl = decorateUrl('/')
+    }
+
+    const navigateToNextUrl = () => {
+      const url = nextUrl ?? '/'
+
       if (url.startsWith('http')) {
         window.location.href = url
         return
       }
 
-      router.push(url)
+      router.replace(url)
+      router.refresh()
     }
 
     const finalizeSignIn = async () => {
       const { error: finalizeError } = await signIn.finalize({
-        navigate: navigateToHome,
+        navigate: setNextUrl,
       })
+
+      if (!finalizeError) {
+        navigateToNextUrl()
+      }
 
       return finalizeError
     }
 
     const finalizeSignUp = async () => {
       const { error: finalizeError } = await signUp.finalize({
-        navigate: navigateToHome,
+        navigate: setNextUrl,
       })
+
+      if (!finalizeError) {
+        navigateToNextUrl()
+      }
 
       return finalizeError
     }
@@ -135,11 +151,19 @@ const SSOCallbackPage = () => {
         return
       }
 
-      router.push('/')
+      const existingSessionId = signIn.existingSession?.sessionId ?? signUp.existingSession?.sessionId
+      if (existingSessionId) {
+        await clerk.setActive({ session: existingSessionId })
+        navigateToNextUrl()
+        return
+      }
+
+      router.replace('/')
+      router.refresh()
     }
 
     void handleCallback()
-  }, [clerk.loaded, router, signIn, signUp])
+  }, [clerk, clerk.loaded, router, signIn, signUp])
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center bg-white px-4" aria-busy={!error}>

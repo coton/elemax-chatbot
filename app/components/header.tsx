@@ -24,7 +24,7 @@ const Header: FC<IHeaderProps> = ({
   onCreateNewChat,
 }) => {
   return (
-    <div className="shrink-0 flex h-14 items-center justify-between p-3">
+    <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between bg-[var(--app-panel-bg)] p-3">
       <div className='flex min-w-0 items-center gap-3'>
         {isMobile && (
           <button

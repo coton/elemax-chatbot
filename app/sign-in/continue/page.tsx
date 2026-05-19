@@ -72,13 +72,13 @@ const ContinueSignInPage = () => {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-      <section className="w-full max-w-[420px] rounded-lg border border-gray-200 bg-white px-6 py-8 shadow-sm">
+    <main className="auth-page flex min-h-screen items-center justify-center px-4">
+      <section className="auth-card w-full max-w-[420px] rounded-lg border px-6 py-8 shadow-sm">
         <div className="text-center">
-          <h1 className="text-xl font-bold leading-7 tracking-normal text-gray-900">
+          <h1 className="text-xl font-bold leading-7 tracking-normal">
             Complete your profile
           </h1>
-          <p className="mt-2 text-sm leading-5 tracking-normal text-gray-500">
+          <p className="mt-2 text-sm leading-5 tracking-normal text-text-tertiary">
             Add the required details to finish creating your account.
           </p>
         </div>
@@ -86,9 +86,9 @@ const ContinueSignInPage = () => {
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           {needsFirstName && (
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">First name</span>
+              <span className="text-sm font-medium text-text-secondary">First name</span>
               <input
-                className="mt-1 h-10 w-full rounded-lg border border-gray-300 px-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                className="mt-1 h-10 w-full rounded-lg border border-gray-300 px-3 text-sm shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
                 value={firstName}
                 onChange={event => setFirstName(event.target.value)}
                 required
@@ -98,9 +98,9 @@ const ContinueSignInPage = () => {
 
           {needsLastName && (
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Last name</span>
+              <span className="text-sm font-medium text-text-secondary">Last name</span>
               <input
-                className="mt-1 h-10 w-full rounded-lg border border-gray-300 px-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
+                className="mt-1 h-10 w-full rounded-lg border border-gray-300 px-3 text-sm shadow-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-200"
                 value={lastName}
                 onChange={event => setLastName(event.target.value)}
                 required
@@ -116,7 +116,7 @@ const ContinueSignInPage = () => {
 
           <button
             type="submit"
-            className="flex h-11 w-full items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-70"
+            className="auth-primary-button flex h-11 w-full items-center justify-center rounded-lg px-4 text-sm font-medium shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving...' : 'Continue'}

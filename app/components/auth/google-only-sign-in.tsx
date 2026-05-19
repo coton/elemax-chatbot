@@ -47,7 +47,7 @@ const GoogleOnlySignIn = () => {
     try {
       const { error: signInError } = await signIn.sso({
         strategy: 'oauth_google',
-        redirectUrl: '/',
+        redirectUrl: '/sso-callback',
         redirectCallbackUrl: '/sso-callback',
       })
 
@@ -63,17 +63,17 @@ const GoogleOnlySignIn = () => {
   }
 
   return (
-    <section className="w-full max-w-[420px] rounded-lg border border-gray-200 bg-white px-6 py-8 shadow-sm">
+    <section className="auth-card w-full max-w-[420px] rounded-lg border px-6 py-8 shadow-sm">
       <div className="text-center">
         <img
           src="/elemax-logo-170x170px.png"
           alt="Elemax"
           className="mx-auto mb-5 h-14 w-14 object-contain"
         />
-        <h1 className="text-xl font-bold leading-7 tracking-normal text-gray-900">
+        <h1 className="text-xl font-bold leading-7 tracking-normal">
           Sign in to use Max AI
         </h1>
-        <p className="mt-2 text-sm leading-5 tracking-normal text-gray-500">
+        <p className="mt-2 text-sm leading-5 tracking-normal text-text-tertiary">
           Sign in to save your chat history and continue conversations across devices.
         </p>
       </div>
@@ -81,7 +81,7 @@ const GoogleOnlySignIn = () => {
       <div className="mt-8">
         <button
           type="button"
-          className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium leading-none tracking-normal text-gray-900 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+          className="auth-provider-button flex h-11 w-full items-center justify-center gap-3 rounded-lg border px-4 text-sm font-medium leading-none tracking-normal shadow-sm transition focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
           disabled={!clerk.loaded || isSubmitting}
           onClick={handleGoogleSignIn}
         >

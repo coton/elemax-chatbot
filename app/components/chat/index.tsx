@@ -20,7 +20,7 @@ import type { FileEntity, FileUpload } from '@/app/components/base/file-uploader
 import { getProcessedFiles } from '@/app/components/base/file-uploader-in-attachment/utils'
 
 const SendIcon = () => (
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-5 w-5">
     <path d="M3 12.9999H9V10.9999H3V1.84558C3 1.56944 3.22386 1.34558 3.5 1.34558C3.58425 1.34558 3.66714 1.36687 3.74096 1.40747L22.2034 11.5618C22.4454 11.6949 22.5337 11.9989 22.4006 12.2409C22.3549 12.324 22.2865 12.3924 22.2034 12.4381L3.74096 22.5924C3.499 22.7255 3.19497 22.6372 3.06189 22.3953C3.02129 22.3214 3 22.2386 3 22.1543V12.9999Z" />
   </svg>
 )
@@ -183,11 +183,11 @@ const Chat: FC<IChatProps> = ({
     return (
       <div className="mb-3">
         <div className="flex items-center gap-6">
-          <div className="h-px flex-1 bg-[#e5e7eb]" />
-          <div className="shrink-0 text-sm font-semibold text-gray-400">TRY TO ASK</div>
-          <div className="h-px flex-1 bg-[#e5e7eb]" />
+          <div className="suggested-question-divider h-px flex-1 bg-[#e5e7eb]" />
+          <div className="shrink-0 text-xs font-semibold text-gray-400">TRY TO ASK</div>
+          <div className="suggested-question-divider h-px flex-1 bg-[#e5e7eb]" />
         </div>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-[10px] flex flex-wrap items-center justify-center gap-3">
           {suggestedQuestionsLoading
             ? [0, 1, 2].map(index => (
               <div
@@ -200,7 +200,7 @@ const Chat: FC<IChatProps> = ({
               <button
                 key={index}
                 type="button"
-                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-[#e5e7eb] bg-white px-4 py-2 text-sm font-semibold leading-5 text-gray-700 shadow-sm transition-colors hover:border-[#bfdbfe] hover:bg-[#eff6ff] active:bg-[#f3f4f6]"
+                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-components-panel-border bg-components-panel-on-panel-item-bg px-4 py-2 text-xs font-semibold leading-5 text-text-secondary shadow-sm transition-colors hover:bg-[#38383b] active:bg-state-base-hover"
                 onClick={() => suggestionClick(suggestion)}
               >
                 {suggestion}
@@ -284,7 +284,7 @@ const Chat: FC<IChatProps> = ({
                   autoSize
                 />
               </div>
-              <div className="absolute bottom-[9px] right-[9px] flex items-center gap-2 h-8">
+              <div className="absolute bottom-[9px] right-[9px] flex items-center gap-1.5 h-8">
                 {
                   visionConfig?.enabled && (
                     <ChatImageUploader
@@ -305,7 +305,7 @@ const Chat: FC<IChatProps> = ({
                 >
                   <button
                     type="button"
-                    className="btn disabled:btn-disabled btn-primary btn-medium ml-3 w-8 px-0"
+                    className="btn disabled:btn-disabled btn-primary btn-medium w-8 px-0"
                     style={{ backgroundColor: 'rgb(28, 100, 242)' }}
                     onClick={handleSend}
                   >
