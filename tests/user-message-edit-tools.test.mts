@@ -30,6 +30,12 @@ assert.match(
 )
 
 assert.match(
+  questionComponent,
+  /isEditing \? 'w-0 grow' : ''/,
+  'inline question editor should expand to the available conversation width',
+)
+
+assert.match(
   chatComponent,
   /onQuestionRetry\?: \(question: ChatItem, content: string\) => void/,
   'question resend should pass edited content to the parent',
@@ -44,11 +50,23 @@ assert.match(
 assert.match(
   mainComponent,
   /handleQuestionRetry = \(question: ChatItem, content: string\)/,
-  'parent should only enter retry flow after Question emits Resend',
+  'parent should handle edit resend after Question emits Resend',
 )
 
 assert.match(
   mainComponent,
-  /appendQuestionVariant[\s\S]*handleRetry\(nextAnswer, content, nextChatList\)/,
-  'resend should add a user-message history version and preserve it while generating the new answer version',
+  /baseChatList = questionIndex === -1[\s\S]*currentChatList\.filter\(\(_, index\) => index !== questionIndex && index !== attachedAnswerIndex\)/,
+  'question resend should remove the original user message and attached answer from their old position',
+)
+
+assert.match(
+  mainComponent,
+  /handleSend\(content, question\.message_files \|\| \[\], \{\s*baseChatList,[\s\S]*answerHistory: attachedAnswer \? \[attachedAnswer\] : \[\],\s*\}\)/,
+  'question resend should append a new bottom message while carrying the attached answer as history',
+)
+
+assert.doesNotMatch(
+  mainComponent,
+  /appendQuestionVariant/,
+  'question resend should not add a history version to the original user message',
 )

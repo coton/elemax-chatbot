@@ -44,9 +44,9 @@ export const fetchConversations = async () => {
   return get('conversations', { params: { limit: 100, first_id: '' } })
 }
 
-export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal }) => {
+export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal, firstId?: string | null, limit?: number }) => {
   const fetchOptions: Record<string, unknown> = {
-    params: { conversation_id: conversationId, limit: 20, last_id: '' },
+    params: { conversation_id: conversationId, limit: options?.limit || 100, first_id: options?.firstId || '' },
   }
   if (options?.signal) { fetchOptions.signal = options.signal }
 

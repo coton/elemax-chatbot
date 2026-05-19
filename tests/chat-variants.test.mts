@@ -7,6 +7,7 @@ import {
   removeAnswerVariantAtIndex,
   setActiveAnswerVariantIndex,
   setActiveQuestionVariantIndex,
+  withAnswerHistory,
 } from '../utils/chat-variants.ts'
 
 interface TestChatItem {
@@ -62,6 +63,18 @@ const removedThird = removeAnswerVariantAtIndex(withThirdVariant, 2)
 assert.equal(removedThird.answerVariants?.length, 2)
 assert.equal(removedThird.activeAnswerVariantIndex, 1)
 assert.equal(getActiveAnswerVariant(removedThird).content, 'second answer')
+
+const editedBranchAnswer = withAnswerHistory({
+  id: 'answer-edited',
+  content: 'edited branch answer',
+  isAnswer: true,
+}, [baseAnswer])
+assert.equal(editedBranchAnswer.id, 'answer-edited')
+assert.equal(editedBranchAnswer.answerGroupId, 'answer-edited')
+assert.equal(editedBranchAnswer.answerVariants?.length, 2)
+assert.equal(editedBranchAnswer.activeAnswerVariantIndex, 1)
+assert.equal(editedBranchAnswer.answerVariants?.[0].id, 'answer-1')
+assert.equal(getActiveAnswerVariant(editedBranchAnswer).content, 'edited branch answer')
 
 const baseQuestion: TestChatItem = {
   id: 'question-1',

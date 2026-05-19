@@ -7,7 +7,10 @@ export async function GET(request: NextRequest) {
     const { user } = await getInfo(request)
     const { searchParams } = new URL(request.url)
     const conversationId = searchParams.get('conversation_id')
-    const { data }: any = await client.getConversationMessages(user, conversationId as string)
+    const firstId = searchParams.get('first_id')
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? Number(limitParam) : null
+    const { data }: any = await client.getConversationMessages(user, conversationId as string, firstId, Number.isFinite(limit) ? limit : null)
     return NextResponse.json(data)
   }
   catch (error: any) {

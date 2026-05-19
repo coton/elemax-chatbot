@@ -24,7 +24,6 @@ import type { Annotation as AnnotationType } from '@/types/log'
 import { addFileInfos, sortAgentSorts } from '@/utils/tools'
 import {
   appendAnswerVariant,
-  appendQuestionVariant,
   getAnswerGroupId,
   getQuestionGroupId,
   isSameAnswerGroup,
@@ -33,6 +32,7 @@ import {
   replaceAnswerVariant,
   setActiveAnswerVariantIndex,
   setActiveQuestionVariantIndex,
+  withAnswerHistory,
 } from '@/utils/chat-variants'
 
 export interface IMainProps {
@@ -138,6 +138,7 @@ const Main: FC<IMainProps> = () => {
     currConversationId,
     getCurrConversationId,
     setCurrConversationId,
+    getConversationIdFromStorage,
     clearConversationIdFromStorage,
     isNewConversation,
     currConversationInfo,
@@ -237,13 +238,14 @@ const Main: FC<IMainProps> = () => {
 
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding && !shouldSkipChatFetch) {
       setIsConversationLoading(true)
-      fetchChatList(currConversationId, { signal: chatListAbortSignal }).then((res: any) => {
+      fetchChatList(currConversationId, { signal: chatListAbortSignal, limit: 100 }).then((res: any) => {
         if (!isCurrentSwitch()) { return }
 
         const { data } = res
+        const historyMessages = Array.isArray(data) ? [...data].reverse() : []
         const newChatList: ChatItem[] = generateNewChatListWithOpenStatement(notSyncToStateIntroduction, notSyncToStateInputs)
 
-        data.forEach((item: any) => {
+        historyMessages.forEach((item: any) => {
           newChatList.push({
             id: `question-${item.id}`,
             content: item.query,
@@ -251,14 +253,15 @@ const Main: FC<IMainProps> = () => {
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'user') || [],
 
           })
-          newChatList.push({
+          const answerItem: ChatItem = {
             id: item.id,
             content: item.answer,
             agent_thoughts: addFileInfos(item.agent_thoughts ? sortAgentSorts(item.agent_thoughts) : item.agent_thoughts, item.message_files),
             feedback: item.feedback,
             isAnswer: true,
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
-          })
+          }
+          newChatList.push(answerItem)
         })
         const lastAnswerMessageId = getLastAnswerMessageId(newChatList)
         if (lastAnswerMessageId) {
@@ -435,6 +438,9 @@ const Main: FC<IMainProps> = () => {
           return
         }
         const firstConversation = conversations[0]
+        const savedConversationId = getConversationIdFromStorage(APP_ID)
+        const savedConversation = savedConversationId ? conversations.find(item => item.id === savedConversationId) : undefined
+        const initialConversation = savedConversation || firstConversation
 
         // fetch new conversation info
         const { user_input_form, opening_statement: introduction, file_upload, system_parameters, suggested_questions = [] }: any = appParams
@@ -444,11 +450,11 @@ const Main: FC<IMainProps> = () => {
           introduction,
           suggested_questions,
         })
-        if (firstConversation) {
+        if (initialConversation) {
           setExistConversationInfo({
-            name: firstConversation.name || t('app.chat.newChatDefaultName'),
-            introduction: firstConversation.introduction || introduction,
-            suggested_questions: firstConversation.suggested_questions || suggested_questions,
+            name: initialConversation.name || t('app.chat.newChatDefaultName'),
+            introduction: initialConversation.introduction || introduction,
+            suggested_questions: initialConversation.suggested_questions || suggested_questions,
           })
         }
         const prompt_variables = userInputsFormToPromptVariables(user_input_form)
@@ -474,7 +480,7 @@ const Main: FC<IMainProps> = () => {
         })
         setConversationList(conversations as ConversationItem[])
 
-        if (firstConversation) { setCurrConversationId(firstConversation.id, APP_ID) }
+        if (initialConversation) { setCurrConversationId(initialConversation.id, APP_ID) }
         else if (conversations.length === 0) {
           startNewConversation({
             inputs: defaultInputs,
@@ -807,7 +813,7 @@ const Main: FC<IMainProps> = () => {
     }
   }
 
-  const handleSend = (message: string, files?: VisionFile[]) => {
+  const handleSend = (message: string, files?: VisionFile[], options?: { answerHistory?: ChatItem[], baseChatList?: ChatItem[] }) => {
     if (isSendLocked) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return false
@@ -861,7 +867,7 @@ const Main: FC<IMainProps> = () => {
       isAnswer: true,
     }
 
-    const currentChatList = getChatList().map(item =>
+    const currentChatList = (options?.baseChatList || getChatList()).map(item =>
       item.isAnswer && (item.suggestedQuestions?.length || item.suggestedQuestionsLoading)
         ? { ...item, suggestedQuestions: [], suggestedQuestionsLoading: false }
         : item,
@@ -879,6 +885,8 @@ const Main: FC<IMainProps> = () => {
       message_files: [],
       isAnswer: true,
     }
+    const answerHistory = options?.answerHistory || []
+    const getResponseItem = () => withAnswerHistory(responseItem, answerHistory)
     let hasSetResponseId = false
 
     const prevTempNewConversationId = currentConversationId || '-1'
@@ -927,7 +935,7 @@ const Main: FC<IMainProps> = () => {
           return
         }
         updateCurrentQA({
-          responseItem,
+          responseItem: getResponseItem(),
           questionId,
           placeholderAnswerId,
           questionItem,
@@ -1010,7 +1018,7 @@ const Main: FC<IMainProps> = () => {
         if (lastThought) { lastThought.message_files = [...(lastThought as any).message_files, { ...file }] }
 
         updateCurrentQA({
-          responseItem,
+          responseItem: getResponseItem(),
           questionId,
           placeholderAnswerId,
           questionItem,
@@ -1050,7 +1058,7 @@ const Main: FC<IMainProps> = () => {
         }
 
         updateCurrentQA({
-          responseItem,
+          responseItem: getResponseItem(),
           questionId,
           placeholderAnswerId,
           questionItem,
@@ -1077,9 +1085,7 @@ const Main: FC<IMainProps> = () => {
             (draft) => {
               if (!draft.find(item => item.id === questionId)) { draft.push({ ...questionItem }) }
 
-              draft.push({
-                ...responseItem,
-              })
+              draft.push(getResponseItem())
             },
           )
           setChatList(newListWithAnswer)
@@ -1092,7 +1098,7 @@ const Main: FC<IMainProps> = () => {
           (draft) => {
             if (!draft.find(item => item.id === questionId)) { draft.push({ ...questionItem }) }
 
-            draft.push({ ...responseItem })
+            draft.push(getResponseItem())
           },
         )
         setChatList(newListWithAnswer)
@@ -1101,13 +1107,14 @@ const Main: FC<IMainProps> = () => {
         if (!isCurrentRequest()) { return }
 
         markRespondingConversationStarted(messageReplace.conversation_id || respondingConversationIdRef.current || undefined)
+        responseItem.content = messageReplace.answer
 
         setChatList(produce(
           getChatList(),
           (draft) => {
             const current = draft.find(item => item.id === messageReplace.id)
 
-            if (current) { current.content = messageReplace.answer }
+            if (current) { Object.assign(current, getResponseItem()) }
           },
         ))
       },
@@ -1139,7 +1146,7 @@ const Main: FC<IMainProps> = () => {
 
           draft[currentIndex] = {
             ...draft[currentIndex],
-            ...responseItem,
+            ...getResponseItem(),
           }
         }))
       },
@@ -1156,7 +1163,7 @@ const Main: FC<IMainProps> = () => {
 
           draft[currentIndex] = {
             ...draft[currentIndex],
-            ...responseItem,
+            ...getResponseItem(),
           }
         }))
       },
@@ -1173,7 +1180,7 @@ const Main: FC<IMainProps> = () => {
 
           draft[currentIndex] = {
             ...draft[currentIndex],
-            ...responseItem,
+            ...getResponseItem(),
           }
         }))
       },
@@ -1193,7 +1200,7 @@ const Main: FC<IMainProps> = () => {
 
           draft[currentIndex] = {
             ...draft[currentIndex],
-            ...responseItem,
+            ...getResponseItem(),
           }
         }))
       },
@@ -1463,36 +1470,22 @@ const Main: FC<IMainProps> = () => {
     }
 
     const currentChatList = getChatList()
-    const questionIndex = currentChatList.findIndex(item => item.id === question.id)
-    if (questionIndex === -1) { return }
-
     const questionGroupId = getQuestionGroupId(question)
-    const questionVariantId = `question-resend-${Date.now()}`
-    const nextQuestionVariant: ChatItem = {
-      ...question,
-      id: questionVariantId,
-      questionVariantId,
-      content,
-      isAnswer: false,
-    }
-    const nextChatList = produce(currentChatList, (draft) => {
-      const currentQuestionIndex = draft.findIndex(item => !item.isAnswer && isSameQuestionGroup(item, questionGroupId))
-      if (currentQuestionIndex === -1) { return }
-
-      draft[currentQuestionIndex] = appendQuestionVariant(draft[currentQuestionIndex], nextQuestionVariant)
-    })
-
+    const questionIndex = currentChatList.findIndex(item => !item.isAnswer && isSameQuestionGroup(item, questionGroupId))
     const nextQuestionIndex = currentChatList.findIndex((item, index) => index > questionIndex && !item.isAnswer)
     const answerSearchEnd = nextQuestionIndex === -1 ? currentChatList.length : nextQuestionIndex
-    const nextAnswer = currentChatList.slice(questionIndex + 1, answerSearchEnd).find(item => item.isAnswer && !item.feedbackDisabled)
+    const attachedAnswerIndex = questionIndex === -1
+      ? -1
+      : currentChatList.findIndex((item, index) => index > questionIndex && index < answerSearchEnd && item.isAnswer && !item.feedbackDisabled)
+    const attachedAnswer = attachedAnswerIndex === -1 ? undefined : currentChatList[attachedAnswerIndex]
+    const baseChatList = questionIndex === -1
+      ? currentChatList
+      : currentChatList.filter((_, index) => index !== questionIndex && index !== attachedAnswerIndex)
 
-    if (nextAnswer) {
-      handleRetry(nextAnswer, content, nextChatList)
-      return
-    }
-
-    setChatList(nextChatList)
-    handleSend(content, question.message_files || [])
+    handleSend(content, question.message_files || [], {
+      baseChatList,
+      answerHistory: attachedAnswer ? [attachedAnswer] : [],
+    })
   }
 
   const handleQuestionVariantChange = (question: ChatItem, index: number) => {

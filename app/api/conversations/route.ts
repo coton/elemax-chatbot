@@ -5,7 +5,10 @@ import { client, getInfo, handleRouteError } from '@/app/api/utils/common'
 export async function GET(request: NextRequest) {
   try {
     const { user } = await getInfo(request)
-    const { data }: any = await client.getConversations(user)
+    const { searchParams } = new URL(request.url)
+    const limitParam = searchParams.get('limit')
+    const limit = limitParam ? Number(limitParam) : null
+    const { data }: any = await client.getConversations(user, null, Number.isFinite(limit) ? limit : null)
     return NextResponse.json(data)
   }
   catch (error: any) {

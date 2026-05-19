@@ -39,3 +39,9 @@ assert.match(
   /\[data-streamdown="table-header"\][\s\S]*background-color:\s*var\(--markdown-table-header-bg\)/,
   'Streamdown table output should be bridged to the shared Markdown table colors',
 )
+
+assert.match(
+  markdownStyles,
+  /\.streamdown-markdown > \.space-y-4 > :last-child \{[\s\S]*margin-bottom:\s*0 !important;/,
+  'Streamdown single-message bubbles should not keep trailing paragraph margin',
+)

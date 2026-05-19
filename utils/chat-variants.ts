@@ -126,6 +126,30 @@ export const appendAnswerVariant = <T extends VariantCarrier>(item: T, variant: 
   return applyActiveVariant(item, variants, variants.length - 1)
 }
 
+export const withAnswerHistory = <T extends VariantCarrier>(item: T, historyItems: T[] = []): T => {
+  const historyVariants = historyItems.flatMap(historyItem => getAnswerVariants(historyItem))
+  if (historyVariants.length === 0) { return item }
+
+  const activeVariant = stripVariantState({
+    ...item,
+    answerVariantId: item.answerVariantId || item.id,
+  })
+  const variants = [
+    ...historyVariants.map(variant =>
+      stripVariantState({
+        ...variant,
+        answerVariantId: variant.answerVariantId || variant.id,
+      } as T),
+    ),
+    activeVariant,
+  ]
+
+  return applyActiveVariant({
+    ...item,
+    answerGroupId: item.id,
+  }, variants, variants.length - 1)
+}
+
 export const replaceActiveAnswerVariant = <T extends VariantCarrier>(item: T, variant: T): T => {
   const variants = getAnswerVariants(item)
   const activeIndex = getActiveAnswerVariantIndex(item)
