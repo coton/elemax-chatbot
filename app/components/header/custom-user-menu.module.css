@@ -77,7 +77,7 @@
   width: min(260px, calc(100vw - 24px));
   padding: 8px;
   color: var(--dark-text);
-  background: rgba(23, 32, 51, 0.98);
+  background: #2b2b2f;
   border: 1px solid var(--dark-border);
   border-radius: 8px;
   box-shadow:
