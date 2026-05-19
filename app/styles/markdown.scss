@@ -100,10 +100,34 @@
   font-weight: 400;
   line-height: 1.5;
   word-wrap: break-word;
+  --markdown-table-bg: var(--color-canvas-default);
+  --markdown-table-header-bg: var(--color-canvas-subtle);
+  --markdown-table-border: var(--color-border-default);
+  --markdown-table-border-subtle: var(--color-border-muted);
+  --markdown-table-header-text: var(--color-fg-muted);
+  --markdown-table-cell-text: var(--color-fg-default);
 }
 
 .light {
   @include light;
+}
+
+.theme-light .markdown-body {
+  --markdown-table-bg: #ffffff;
+  --markdown-table-header-bg: #f2f4f7;
+  --markdown-table-border: var(--app-divider);
+  --markdown-table-border-subtle: var(--app-border);
+  --markdown-table-header-text: var(--app-text-tertiary);
+  --markdown-table-cell-text: var(--app-text-secondary);
+}
+
+.theme-dark .markdown-body {
+  --markdown-table-bg: var(--app-panel-muted-bg);
+  --markdown-table-header-bg: var(--dark-surface-hover);
+  --markdown-table-border: rgba(255, 255, 255, 0.14);
+  --markdown-table-border-subtle: rgba(255, 255, 255, 0.08);
+  --markdown-table-header-text: var(--app-text-tertiary);
+  --markdown-table-cell-text: var(--app-text-secondary);
 }
 
 :root {
@@ -284,11 +308,14 @@
 
 .markdown-body table {
   border-spacing: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
   display: block;
   width: max-content;
   max-width: 100%;
   overflow: auto;
+  border: 1px solid var(--markdown-table-border);
+  border-radius: 8px;
+  background-color: var(--markdown-table-bg);
 }
 
 .markdown-body td,
@@ -630,23 +657,59 @@
   margin-bottom: 16px;
 }
 
-.markdown-body table th {
-  font-weight: var(--base-text-weight-semibold, 600);
-}
-
 .markdown-body table th,
 .markdown-body table td {
   padding: 6px 13px;
-  border: 1px solid var(--color-border-default);
+  border: 0;
+  white-space: nowrap;
+}
+
+.markdown-body table th {
+  color: var(--markdown-table-header-text);
+  font-size: 12px;
+  font-weight: var(--base-text-weight-medium, 500);
+  background-color: var(--markdown-table-header-bg);
+}
+
+.markdown-body table td {
+  color: var(--markdown-table-cell-text);
+  font-size: 13px;
+  font-weight: var(--base-text-weight-normal, 400);
 }
 
 .markdown-body table tr {
-  background-color: var(--color-canvas-default);
-  border-top: 1px solid var(--color-border-muted);
+  background-color: var(--markdown-table-bg);
 }
 
-.markdown-body table tr:nth-child(2n) {
-  background-color: var(--color-canvas-subtle);
+.markdown-body table tr>th:not(:last-child),
+.markdown-body table tr>td:not(:last-child) {
+  border-right: 1px solid var(--markdown-table-border-subtle);
+}
+
+.markdown-body table tbody tr:first-child td {
+  border-top: 1px solid var(--markdown-table-border);
+}
+
+.markdown-body table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--markdown-table-border-subtle);
+}
+
+.markdown-body [data-streamdown="table-wrapper"] > div:first-child button {
+  color: var(--markdown-table-header-text);
+}
+
+.markdown-body [data-streamdown="table-wrapper"] > div:first-child button:hover {
+  color: var(--color-fg-default);
+}
+
+.markdown-body [data-streamdown="table-header"] {
+  background-color: var(--markdown-table-header-bg);
+}
+
+.markdown-body [data-streamdown="table-body"],
+.markdown-body [data-streamdown="table-row"] {
+  border-color: var(--markdown-table-border-subtle);
+  background-color: var(--markdown-table-bg);
 }
 
 .markdown-body table img {

@@ -322,14 +322,14 @@ const Chat: FC<IChatProps> = ({
       {!isHideSendInput && (
         <div
           className={cn(
-            'fixed z-10 bottom-4 left-1/2 max-w-full -translate-x-1/2 transform px-4 mobile:w-full tablet:w-[768px] pc:w-[768px]',
-            !isSidebarCollapsed && 'pc:ml-[118px] tablet:ml-[108px]',
-            isSidebarCollapsed && 'pc:ml-0 tablet:ml-0',
+            'chat-input-section fixed z-10 bottom-4 left-1/2 max-w-full -translate-x-1/2 transform px-4 mobile:w-full tablet:w-[768px] pc:w-[768px]',
+            !isSidebarCollapsed && 'chat-input-section-sidebar',
+            isSidebarCollapsed && 'chat-input-section-collapsed',
           )}
         >
           {renderSuggestedQuestions()}
-          <div className="relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
-            <div className="relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">
+          <div className="chat-input-panel relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
+            <div className="chat-input-scroll relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">
               {visionConfig?.enabled && files.length > 0 && (
                 <div className="mb-1">
                   <ImageList
@@ -351,7 +351,7 @@ const Chat: FC<IChatProps> = ({
                 </div>
               )}
               <Textarea
-                className="block w-full max-h-none min-h-8 resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-8 text-gray-900 outline-none placeholder:text-gray-400"
+                className="chat-input-textarea block w-full max-h-none min-h-8 resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-8 text-gray-900 outline-none placeholder:text-gray-400"
                 placeholder={t('app.chat.inputPlaceholder')}
                 value={query}
                 onChange={handleContentChange}
@@ -360,7 +360,7 @@ const Chat: FC<IChatProps> = ({
                 autoSize
               />
             </div>
-            <div className="absolute right-[9px] top-1/2 flex h-8 -translate-y-1/2 items-center gap-1.5">
+            <div className="chat-input-actions absolute right-[9px] top-1/2 flex h-8 -translate-y-1/2 items-center gap-1.5">
               {visionConfig?.enabled && (
                 <ChatImageUploader
                   settings={visionConfig}

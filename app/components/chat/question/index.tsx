@@ -103,7 +103,7 @@ const Question: FC<IQuestionProps> = ({ item, userAvatarInitial = 'U', userAvata
 
   return (
     <div className='mb-2 flex justify-end last:mb-0' key={id}>
-      <div className='group relative mr-4 flex max-w-full items-start overflow-x-hidden pl-14'>
+      <div className='group relative mr-4 flex max-w-full items-start overflow-visible pl-14'>
         <div className="mr-2 gap-1 flex">
           <div
             className="absolute z-20 hidden gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm group-hover:flex"

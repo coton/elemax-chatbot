@@ -19,6 +19,12 @@ assert.match(
 
 assert.match(
   questionComponent,
+  /group relative mr-4 flex max-w-full items-start overflow-visible pl-14/,
+  'user message hover tools should not be clipped by the message wrapper',
+)
+
+assert.match(
+  questionComponent,
   /setIsEditing\(true\)[\s\S]*Cancel[\s\S]*Resend/,
   'edit icon should expand an inline editor with Cancel and Resend controls',
 )

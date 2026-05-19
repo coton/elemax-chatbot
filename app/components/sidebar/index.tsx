@@ -181,6 +181,24 @@ const Sidebar: FC<ISidebarProps> = ({
   const settingsLabel = t('tools.setting')
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   const [aboutOpen, setAboutOpen] = React.useState(false)
+  const settingsWrapRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!settingsOpen) { return }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target
+
+      if (!(target instanceof Node)) { return }
+      if (settingsWrapRef.current?.contains(target)) { return }
+
+      setSettingsOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [settingsOpen])
+
   return (
     <div
       className="app-sidebar flex w-full grow flex-col rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
@@ -248,7 +266,10 @@ const Sidebar: FC<ISidebarProps> = ({
           )
         })}
       </nav>
-      <div className="relative flex flex-shrink-0 items-center justify-between gap-3 p-3">
+      <div
+        ref={settingsWrapRef}
+        className="relative flex flex-shrink-0 items-center justify-between gap-3 p-3"
+      >
         {settingsOpen && (
           <div className="absolute bottom-12 left-3 z-30">
             <SettingsMenu

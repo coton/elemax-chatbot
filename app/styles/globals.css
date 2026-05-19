@@ -329,6 +329,43 @@ textarea::placeholder {
   vertical-align: middle;
 }
 
+@media (max-width: 640px) {
+  .chat-input-section {
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .chat-input-scroll {
+    max-height: min(45vh, 158px);
+  }
+
+  .chat-input-textarea {
+    padding-right: 96px;
+  }
+
+  .chat-input-actions {
+    right: 8px;
+    gap: 4px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .chat-input-section-sidebar {
+    width: calc(100vw - 216px);
+    max-width: calc(100vw - 216px);
+    margin-left: 108px;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .chat-input-section-sidebar {
+    margin-left: 118px;
+  }
+}
+
 .action-btn {
   display: inline-flex;
   align-items: center;
