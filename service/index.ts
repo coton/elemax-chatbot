@@ -40,6 +40,10 @@ export const sendChatMessage = async (
   }, { onData, onCompleted, onThought, onFile, onError, getAbortController, onMessageEnd, onMessageReplace, onNodeStarted, onWorkflowStarted, onWorkflowFinished, onNodeFinished })
 }
 
+export const stopChatMessage = async (taskId: string) => {
+  return post(`chat-messages/${taskId}/stop`, { body: {} }, { silent: true })
+}
+
 export const fetchConversations = async () => {
   return get('conversations', { params: { limit: 100, first_id: '' } })
 }

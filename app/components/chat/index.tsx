@@ -35,6 +35,29 @@ const SendIcon = () => (
   </svg>
 )
 
+const StopCircleIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="mr-[5px] h-3.5 w-3.5"
+    data-icon="StopCircle"
+    aria-hidden="true"
+  >
+    <g id="stop-circle">
+      <path
+        id="Solid"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M9.99992 0.833984C4.93731 0.833984 0.833252 4.93804 0.833252 10.0007C0.833252 15.0633 4.93731 19.1673 9.99992 19.1673C15.0625 19.1673 19.1666 15.0633 19.1666 10.0007C19.1666 4.93804 15.0625 0.833984 9.99992 0.833984ZM6.75741 7.12232C6.66658 7.30058 6.66658 7.53394 6.66658 8.00065V12.0006C6.66658 12.4674 6.66658 12.7007 6.75741 12.879C6.83731 13.0358 6.96479 13.1633 7.12159 13.2432C7.29985 13.334 7.53321 13.334 7.99992 13.334H11.9999C12.4666 13.334 12.7 13.334 12.8782 13.2432C13.035 13.1633 13.1625 13.0358 13.2424 12.879C13.3333 12.7007 13.3333 12.4674 13.3333 12.0006V8.00065C13.3333 7.53394 13.3333 7.30058 13.2424 7.12232C13.1625 6.96552 13.035 6.83804 12.8782 6.75814C12.7 6.66732 12.4666 6.66732 11.9999 6.66732H7.99992C7.53321 6.66732 7.29985 6.66732 7.12159 6.75814C6.96479 6.83804 6.83731 6.96552 6.75741 7.12232Z"
+        fill="currentColor"
+      />
+    </g>
+  </svg>
+)
+
 export interface IChatProps {
   chatList: ChatItem[]
   /**
@@ -51,8 +74,10 @@ export interface IChatProps {
   onVariantChange?: (answer: ChatItem, index: number) => void
   checkCanSend?: () => boolean
   onSend?: (message: string, files: VisionFile[]) => boolean | void
+  onStopResponding?: () => void
   useCurrentUserAvatar?: boolean
   isResponding?: boolean
+  hasStopResponded?: boolean
   controlClearQuery?: number
   visionConfig?: VisionSettings
   fileConfig?: FileUpload
@@ -70,8 +95,10 @@ const Chat: FC<IChatProps> = ({
   onVariantChange,
   checkCanSend,
   onSend = () => {},
+  onStopResponding,
   useCurrentUserAvatar,
   isResponding,
+  hasStopResponded = false,
   controlClearQuery,
   visionConfig,
   fileConfig,
@@ -323,6 +350,19 @@ const Chat: FC<IChatProps> = ({
             isSidebarCollapsed && 'chat-input-section-collapsed',
           )}
         >
+          {isResponding && (
+            <div className="mb-2 flex justify-center">
+              <button
+                type="button"
+                className="btn disabled:btn-disabled btn-secondary btn-medium border-components-panel-border bg-components-panel-bg text-components-button-secondary-text"
+                disabled={hasStopResponded}
+                onClick={onStopResponding}
+              >
+                <StopCircleIcon />
+                <span className="text-xs font-normal">Stop responding</span>
+              </button>
+            </div>
+          )}
           {renderSuggestedQuestions()}
           <div className="chat-input-panel relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
             <div className="chat-input-scroll relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">

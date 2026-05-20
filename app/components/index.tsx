@@ -9,7 +9,7 @@ import Toast from '@/app/components/base/toast'
 import Sidebar, { type ThemePreference } from '@/app/components/sidebar'
 import ConfigSence from '@/app/components/config-scence'
 import Header from '@/app/components/header'
-import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, fetchSuggestedQuestions, generationConversationName, sendChatMessage, updateFeedback } from '@/service'
+import { deleteConversation as deleteConversationRequest, fetchAppParams, fetchChatList, fetchConversations, fetchSuggestedQuestions, generationConversationName, sendChatMessage, stopChatMessage, updateFeedback } from '@/service'
 import type { ChatItem, ConversationItem, Feedbacktype, PromptConfig, PromptVariable, VisionFile, VisionSettings } from '@/types/app'
 import type { FileUpload } from '@/app/components/base/file-uploader-in-attachment/types'
 import { Resolution, TransferMethod, WorkflowRunningStatus } from '@/types/app'
@@ -698,7 +698,7 @@ const Main: FC<IMainProps> = () => {
   const [controlFocus, setControlFocus] = useState(0)
   const [openingSuggestedQuestions, setOpeningSuggestedQuestions] = useState<string[]>([])
   const [messageTaskId, setMessageTaskId] = useState('')
-  const [hasStopResponded, setHasStopResponded, getHasStopResponded] = useGetState(false)
+  const [hasStopResponded, setHasStopResponded] = useState(false)
   const [isRespondingConIsCurrCon, setIsRespondingConCurrCon, getIsRespondingConIsCurrCon] = useGetState(true)
   const [userQuery, setUserQuery] = useState('')
 
@@ -710,6 +710,51 @@ const Main: FC<IMainProps> = () => {
     setIsRespondingConCurrCon(true)
     setRespondingFalse()
     unlockSending()
+  }
+
+  const removeEmptyTrailingAnswer = () => {
+    setChatList(produce(getChatList(), (draft) => {
+      const lastItem = draft[draft.length - 1]
+      if (!lastItem?.isAnswer) { return }
+      if (lastItem.content || lastItem.agent_thoughts?.length || lastItem.workflowProcess) { return }
+
+      draft.pop()
+    }))
+  }
+
+  const handleStopResponding = async () => {
+    if (!isResponding || hasStopResponded) { return }
+
+    const taskId = messageTaskId
+    const shouldSyncNewConversation = getConversationIdChangeBecauseOfNew()
+    const startedConversationId = respondingConversationIdRef.current || ''
+    setHasStopResponded(true)
+
+    const stopResponsePromise = taskId ? stopChatMessage(taskId) : Promise.resolve()
+    cutOffCurrentResponse()
+    removeEmptyTrailingAnswer()
+
+    try {
+      await stopResponsePromise
+    }
+    catch (error: any) {
+      notify({ type: 'error', message: error?.message || 'Failed to stop responding' })
+    }
+
+    if (shouldSyncNewConversation && startedConversationId) {
+      try {
+        const syncedConversations = await syncConversationHistory({
+          autoGenerateNameForId: startedConversationId,
+        })
+        const nextConversation = syncedConversations?.find(item => item.id === startedConversationId)
+        promoteNewConversation(startedConversationId, nextConversation)
+      }
+      catch (error: any) {
+        notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
+      }
+    }
+
+    resetRespondingConversationRefs()
   }
 
   const updateCurrentQA = ({
@@ -819,6 +864,7 @@ const Main: FC<IMainProps> = () => {
       return false
     }
     suggestedQuestionsRequestIdRef.current += 1
+    setHasStopResponded(false)
     const currentConversationId = getCurrConversationId()
     const isSendingNewConversation = currentConversationId === '-1'
     const toServerInputs: Record<string, any> = {}
@@ -1227,6 +1273,7 @@ const Main: FC<IMainProps> = () => {
     }
 
     suggestedQuestionsRequestIdRef.current += 1
+    setHasStopResponded(false)
 
     const currentConversationId = getCurrConversationId()
     const retryVariantId = `answer-retry-${Date.now()}`
@@ -1588,7 +1635,9 @@ const Main: FC<IMainProps> = () => {
                         onQuestionVariantChange={handleQuestionVariantChange}
                         onVariantChange={handleAnswerVariantChange}
                         isResponding={isResponding}
+                        hasStopResponded={hasStopResponded}
                         isSendLocked={isSendLocked}
+                        onStopResponding={handleStopResponding}
                         checkCanSend={checkCanSend}
                         visionConfig={visionConfig}
                         fileConfig={fileConfig}
