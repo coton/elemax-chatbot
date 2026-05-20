@@ -147,7 +147,9 @@ const AboutDialog = ({
               src="/elemax-logo-170x170px.png"
             />
           </span>
-          <div id="about-dialog-title" className="system-xl-semibold text-text-secondary">Max AI</div>
+          <div id="about-dialog-title" className="max-w-[300px] text-center text-[17px] font-semibold leading-6 text-text-secondary">
+            MaxAI is a smart AI consultant for the building engineering services industry.
+          </div>
           <div className="system-xs-regular text-text-tertiary" />
         </div>
       </div>
@@ -226,7 +228,7 @@ const Sidebar: FC<ISidebarProps> = ({
         <div className="shrink-0 px-3 py-4">
           <Button
             onClick={() => { onCurrentIdChange('-1') }}
-            className="new-chat-button group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[0.5px] !border-state-accent-border !bg-state-accent-hover !px-[14px] !py-0 text-text-accent items-center !text-sm !font-medium hover:!bg-state-accent-hover-alt"
+            className="new-chat-button group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[0.5px] !border-state-accent-border !bg-state-accent-hover !px-[14px] !py-0 text-text-accent items-center !text-sm !font-medium hover:!bg-[#eef0f3]"
           >
             <NewChatIcon /> Start New chat
           </Button>

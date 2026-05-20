@@ -23,6 +23,12 @@ assert.match(
 )
 
 assert.match(
+  streamdownMarkdown,
+  /normalizeTableDelimiterRows[\s\S]*expandedDelimiterCells\.length !== headerCells\.length[\s\S]*expandedDelimiterCells\.every\(cell => tableDelimiterCellRegex\.test\(cell\)\)/,
+  'message Markdown should repair delimiter rows like `| :--- | :--- :--- |` so malformed model tables can render',
+)
+
+assert.match(
   markdownStyles,
   /\.markdown-body table \{[\s\S]*border-collapse:\s*separate;[\s\S]*border-radius:\s*8px;/,
   'message Markdown tables should use Dify-style rounded separated borders',

@@ -4,6 +4,7 @@ import type { FeedbackFunc } from '../type'
 import type { ChatItem, VisionFile } from '@/types/app'
 import type { Emoji } from '@/types/tools'
 import React from 'react'
+import { createPortal } from 'react-dom'
 import copy from 'copy-to-clipboard'
 import StreamdownMarkdown from '@/app/components/base/streamdown-markdown'
 import WorkflowProcess from '@/app/components/workflow/workflow-process'
@@ -29,6 +30,12 @@ const DislikeIcon = () => (
 const CopyIcon = () => (
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
     <path d="M7 4V2H17V4H20.0066C20.5552 4 21 4.44495 21 4.9934V21.0066C21 21.5552 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5551 3 21.0066V4.9934C3 4.44476 3.44495 4 3.9934 4H7ZM7 6H5V20H19V6H17V8H7V6ZM9 4V6H15V4H9Z" />
+  </svg>
+)
+
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-5 w-5">
+    <path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z" />
   </svg>
 )
 
@@ -71,15 +78,59 @@ const Answer: FC<IAnswerProps> = ({
   const feedbackEnabled = !feedbackDisabled && !item.feedbackDisabled
   const feedbackActionEnabled = feedbackEnabled && !isStreaming
   const activeRating = feedback?.rating
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = React.useState(false)
+  const [feedbackContent, setFeedbackContent] = React.useState('')
+  const [feedbackSubmitting, setFeedbackSubmitting] = React.useState(false)
 
   const handleCopy = () => {
     if (copy(content || '')) { Toast.notify({ type: 'success', message: 'Copied successfully' }) }
   }
 
-  const handleFeedback = (rating: 'like' | 'dislike') => {
+  const handleLike = () => {
     if (!feedbackEnabled) { return }
-    onFeedback?.(id, { rating: activeRating === rating ? null : rating })
+    onFeedback?.(id, { rating: 'like' })
   }
+
+  const handleDislike = () => {
+    if (!feedbackEnabled) { return }
+    setFeedbackContent(feedback?.content || '')
+    setFeedbackDialogOpen(true)
+  }
+
+  const handleCancelFeedback = () => {
+    if (feedbackSubmitting) { return }
+    setFeedbackDialogOpen(false)
+  }
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackEnabled || feedbackSubmitting) { return }
+
+    const trimmedFeedbackContent = feedbackContent.trim()
+    if (!trimmedFeedbackContent) {
+      Toast.notify({ type: 'warning', message: 'Feedback content cannot be empty' })
+      return
+    }
+
+    setFeedbackSubmitting(true)
+    try {
+      await onFeedback?.(id, { rating: 'dislike', content: trimmedFeedbackContent })
+      setFeedbackDialogOpen(false)
+    }
+    finally {
+      setFeedbackSubmitting(false)
+    }
+  }
+
+  React.useEffect(() => {
+    if (!feedbackDialogOpen) { return }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !feedbackSubmitting) { setFeedbackDialogOpen(false) }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [feedbackDialogOpen, feedbackSubmitting])
 
   const getImgs = (list?: VisionFile[]) => {
     if (!list) { return [] }
@@ -131,8 +182,8 @@ const Answer: FC<IAnswerProps> = ({
             )}
         </div>
         <div className={`${s.answerWrap} chat-answer-container group ml-4 w-0 grow pb-4`}>
-          <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-gray-900 ${workflowProcess ? 'w-full' : ''}`}>
+          <div className={`${s.answer} relative text-sm text-text-secondary`}>
+            <div className={`assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-text-secondary ${workflowProcess ? 'w-full' : ''}`}>
               {workflowProcess && (
                 <WorkflowProcess data={workflowProcess} hideInfo />
               )}
@@ -177,15 +228,15 @@ const Answer: FC<IAnswerProps> = ({
                       type="button"
                       className={`action-btn action-btn-m ${activeRating === 'like' ? 'action-btn-active' : ''}`}
                       aria-pressed={activeRating === 'like'}
-                      onClick={() => handleFeedback('like')}
+                      onClick={handleLike}
                     >
                       <LikeIcon />
                     </button>
                     <button
                       type="button"
-                      className={`action-btn action-btn-m ${activeRating === 'dislike' ? 'action-btn-active' : ''}`}
+                      className={`action-btn action-btn-m hover:bg-state-destructive-hover hover:text-text-destructive ${activeRating === 'dislike' ? 'action-btn-destructive' : ''}`}
                       aria-pressed={activeRating === 'dislike'}
-                      onClick={() => handleFeedback('dislike')}
+                      onClick={handleDislike}
                     >
                       <DislikeIcon />
                     </button>
@@ -201,6 +252,60 @@ const Answer: FC<IAnswerProps> = ({
           </div>
         </div>
       </div>
+      {feedbackDialogOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px]"
+          role="presentation"
+          onClick={handleCancelFeedback}
+        >
+          <div
+            className="flex max-h-[80%] w-full max-w-[480px] flex-col rounded-2xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-dialog-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="relative shrink-0 p-6 pb-3 pr-14 text-text-primary">
+              <div id="feedback-dialog-title" className="text-[20px] font-semibold leading-7">Provide Feedback</div>
+              <div className="system-xs-regular mt-1 text-text-tertiary">Please tell us what went wrong with this response</div>
+              <button
+                type="button"
+                className="absolute right-5 top-5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-text-tertiary hover:bg-state-base-hover hover:text-text-secondary"
+                aria-label="Close feedback dialog"
+                disabled={feedbackSubmitting}
+                onClick={handleCancelFeedback}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3">
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-2 block text-[13px] font-semibold leading-5 text-text-secondary" htmlFor={`feedback-content-${id}`}>Feedback Content</label>
+                  <textarea
+                    id={`feedback-content-${id}`}
+                    className="min-h-20 w-full resize-y appearance-none rounded-md border border-transparent bg-components-panel-on-panel-item-bg px-3 py-2 text-[13px] leading-5 text-text-secondary caret-primary-600 outline-none placeholder:text-text-tertiary hover:border-components-panel-border hover:bg-components-panel-on-panel-item-bg focus:border-state-accent-border focus:bg-components-panel-on-panel-item-bg focus:shadow-xs"
+                    placeholder="Please describe what went wrong or how we can improve..."
+                    rows={4}
+                    value={feedbackContent}
+                    disabled={feedbackSubmitting}
+                    autoFocus
+                    onChange={event => setFeedbackContent(event.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex shrink-0 justify-between p-6 pt-5">
+              <div />
+              <div className="flex items-center">
+                <button type="button" className="btn disabled:btn-disabled btn-secondary btn-medium" disabled={feedbackSubmitting} onClick={handleCancelFeedback}>Cancel</button>
+                <button type="button" className="btn disabled:btn-disabled btn-primary btn-medium ml-2" disabled={feedbackSubmitting} onClick={handleSubmitFeedback}>Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }

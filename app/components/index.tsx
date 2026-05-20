@@ -1484,7 +1484,7 @@ const Main: FC<IMainProps> = () => {
   }
 
   const handleFeedback = async (messageId: string, feedback: Feedbacktype) => {
-    await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: { rating: feedback.rating } })
+    await updateFeedback({ url: `/messages/${messageId}/feedbacks`, body: feedback })
     const newChatList = chatList.map((item) => {
       if (item.isAnswer && isSameAnswerGroup(item, messageId)) {
         const targetVariant = item.answerVariants?.find(variant => variant.id === messageId || variant.answerVariantId === messageId) || item

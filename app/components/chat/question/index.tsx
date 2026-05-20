@@ -40,11 +40,11 @@ const Question: FC<IQuestionProps> = ({ item, userAvatarInitial = 'U', userAvata
   return (
     <div className='mb-2 flex justify-end last:mb-0' key={id}>
       <div className="relative mr-4 flex max-w-full items-start">
-        <div className="w-full rounded-2xl bg-background-gradient-bg-fill-chat-bubble-bg-3 px-4 py-3 text-sm text-text-primary">
+        <div className="user-message-bubble w-full rounded-2xl bg-background-gradient-bg-fill-chat-bubble-bg-3 px-4 py-3 text-sm text-text-secondary">
           {imgSrcs && imgSrcs.length > 0 && (
             <ImageGallery srcs={imgSrcs} />
           )}
-          <StreamdownMarkdown content={content} className="!text-text-primary" />
+          <StreamdownMarkdown content={content} className="!text-text-secondary" />
           {variantCount > 1 && (
             <div className="flex items-center justify-center pt-3.5 text-sm">
               <button
@@ -54,9 +54,9 @@ const Question: FC<IQuestionProps> = ({ item, userAvatarInitial = 'U', userAvata
                 aria-label="Previous question"
                 onClick={handlePreviousVariant}
               >
-                <ChevronRightIcon className="h-[14px] w-[14px] rotate-180 text-text-primary" />
+                <ChevronRightIcon className="h-[14px] w-[14px] rotate-180 text-text-secondary" />
               </button>
-              <span className="px-2 text-xs text-text-primary">{activeVariantIndex + 1} /{variantCount}</span>
+              <span className="px-2 text-xs text-text-secondary">{activeVariantIndex + 1} /{variantCount}</span>
               <button
                 type="button"
                 className={activeVariantIndex < variantCount - 1 ? 'opacity-100' : 'opacity-30'}
@@ -64,7 +64,7 @@ const Question: FC<IQuestionProps> = ({ item, userAvatarInitial = 'U', userAvata
                 aria-label="Next question"
                 onClick={handleNextVariant}
               >
-                <ChevronRightIcon className="h-[14px] w-[14px] text-text-primary" />
+                <ChevronRightIcon className="h-[14px] w-[14px] text-text-secondary" />
               </button>
             </div>
           )}

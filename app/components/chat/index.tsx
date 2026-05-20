@@ -266,7 +266,7 @@ const Chat: FC<IChatProps> = ({
               <button
                 key={index}
                 type="button"
-                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-components-panel-border bg-components-panel-on-panel-item-bg px-4 py-2 text-xs font-semibold leading-5 text-text-secondary shadow-sm transition-colors hover:bg-[#38383b] active:bg-state-base-hover"
+                className="flex h-9 max-w-full items-center justify-center rounded-lg border border-components-panel-border bg-components-panel-on-panel-item-bg px-4 py-2 text-xs font-semibold leading-5 text-text-secondary shadow-sm transition-colors hover:bg-[#eef0f3] active:bg-state-base-hover"
                 onClick={() => suggestionClick(suggestion)}
               >
                 {suggestion}

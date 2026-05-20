@@ -408,6 +408,11 @@ textarea::placeholder {
   background-color: #ebf5ff;
 }
 
+.action-btn.action-btn-destructive {
+  color: var(--app-destructive);
+  background-color: var(--app-destructive-hover);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -433,6 +438,17 @@ textarea::placeholder {
 
 .btn-primary:hover {
   background-color: #1a56db;
+}
+
+.btn-secondary {
+  color: var(--app-text-secondary);
+  background-color: var(--app-panel-on-panel-item-bg);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+}
+
+.btn-secondary:hover {
+  background-color: var(--dark-surface-hover);
 }
 
 .btn-ghost {
@@ -511,7 +527,7 @@ textarea::placeholder {
 }
 
 .bg-background-gradient-bg-fill-chat-bubble-bg-3 {
-  background-color: #e1effe;
+  background-color: #e3eefd;
 }
 
 .bg-components-segmented-control-bg-normal {
@@ -612,12 +628,31 @@ textarea::placeholder {
 }
 
 .theme-light .assistant-message-bubble {
+  color: var(--app-text-secondary) !important;
+  background-color: #fcfcfd !important;
+}
+
+.theme-light .assistant-message-bubble .markdown-body {
+  color: var(--app-text-secondary) !important;
+}
+
+.theme-light .new-chat-button {
   background-color: #ffffff !important;
 }
 
-.theme-light .new-chat-button,
 .theme-light .new-chat-button:hover {
-  background-color: #ffffff !important;
+  background-color: #eef0f3 !important;
+}
+
+.theme-light .user-message-bubble,
+.theme-light :where([class~="bg-background-gradient-bg-fill-chat-bubble-bg-3"]) {
+  background-color: #e3eefd !important;
+}
+
+.theme-light .user-message-bubble,
+.theme-light .user-message-bubble .markdown-body,
+.theme-light :where([class~="bg-background-gradient-bg-fill-chat-bubble-bg-3"], [class~="bg-background-gradient-bg-fill-chat-bubble-bg-3"] *) {
+  color: var(--app-text-secondary) !important;
 }
 
 .theme-dark :where(.text-gray-900, .text-gray-800, .text-gray-700) {
