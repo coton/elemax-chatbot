@@ -636,6 +636,10 @@ textarea::placeholder {
   color: var(--app-text-secondary) !important;
 }
 
+.theme-light .assistant-message-bubble .streamdown-markdown code:not(pre code) {
+  color: var(--app-text-secondary) !important;
+}
+
 .theme-light .new-chat-button {
   background-color: #ffffff !important;
 }
