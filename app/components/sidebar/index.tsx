@@ -1,12 +1,12 @@
-import React from 'react'
-import type { FC } from 'react'
-import { createPortal } from 'react-dom'
-import { useTranslation } from 'react-i18next'
+import Button from '@/app/components/base/button'
 import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import Button from '@/app/components/base/button'
+import type { FC } from 'react'
+import React from 'react'
+import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 // import Card from './card'
 import type { ConversationItem } from '@/types/app'
 
@@ -147,7 +147,7 @@ const AboutDialog = ({
               src="/elemax-logo-170x170px.png"
             />
           </span>
-          <div id="about-dialog-title" className="max-w-[300px] text-center text-[17px] font-semibold leading-6 text-text-secondary">
+          <div id="about-dialog-title" className="max-w-[340px] text-center text-[17px] font-semibold leading-6 text-text-secondary">
             MaxAI is a smart AI consultant for the building engineering services industry.
           </div>
           <div className="system-xs-regular text-text-tertiary" />
