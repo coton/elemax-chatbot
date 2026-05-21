@@ -45,16 +45,11 @@ const GoogleOnlySignIn = () => {
     setIsSubmitting(true)
 
     try {
-      const { error: signInError } = await signIn.sso({
+      await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
-        redirectCallbackUrl: '/sso-callback',
+        redirectUrlComplete: '/',
       })
-
-      if (signInError) {
-        setError('Unable to start Google sign in. Please try again.')
-        setIsSubmitting(false)
-      }
     }
     catch {
       setError('Unable to start Google sign in. Please try again.')
