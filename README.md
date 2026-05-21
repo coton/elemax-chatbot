@@ -72,6 +72,41 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
+This repository is ready for Vercel Git automatic deployments.
+
+### Automatic deployment
+
+1. Push this project to GitHub, GitLab, or Bitbucket.
+2. In Vercel, create a new project and import this repository.
+3. If importing from a larger parent repository, set **Root Directory** to:
+
+```bash
+apps/elemax-chatbot
+```
+
+4. Keep the framework as **Next.js**. The build settings are pinned in `vercel.json`:
+
+```bash
+Install Command: pnpm install --frozen-lockfile
+Build Command: pnpm build
+Node.js Version: 20.x
+```
+
+5. Add these Environment Variables for Production and Preview:
+
+```bash
+NEXT_PUBLIC_APP_ID=
+NEXT_PUBLIC_APP_KEY=
+NEXT_PUBLIC_API_URL=https://api.dify.ai/v1
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+CLERK_SECRET_KEY=
+```
+
+For this branch, `NEXT_PUBLIC_APP_KEY` is the Dify Backend Service API key shown in Dify's **Backend Service API -> API Key** dialog.
+
+After the project is connected, Vercel will automatically create preview deployments for pull requests and production deployments for pushes to the production branch configured in Vercel.
+
 > ⚠️ If you are using [Vercel Hobby](https://vercel.com/pricing), your message will be truncated due to the limitation of vercel.
 
 
