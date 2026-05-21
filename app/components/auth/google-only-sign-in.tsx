@@ -32,12 +32,12 @@ const GoogleIcon = () => {
 
 const GoogleOnlySignIn = () => {
   const clerk = useClerk()
-  const { signIn } = useSignIn()
+  const { isLoaded: isSignInLoaded, signIn } = useSignIn()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const handleGoogleSignIn = async () => {
-    if (!clerk.loaded || isSubmitting) {
+    if (!clerk.loaded || !isSignInLoaded || !signIn || isSubmitting) {
       return
     }
 
@@ -51,7 +51,8 @@ const GoogleOnlySignIn = () => {
         redirectUrlComplete: '/',
       })
     }
-    catch {
+    catch (error) {
+      console.error('[auth] unable to start Google sign in', error)
       setError('Unable to start Google sign in. Please try again.')
       setIsSubmitting(false)
     }
@@ -77,7 +78,7 @@ const GoogleOnlySignIn = () => {
         <button
           type="button"
           className="auth-provider-button flex h-11 w-full items-center justify-center gap-3 rounded-lg border px-4 text-sm font-medium leading-none tracking-normal shadow-sm transition focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={!clerk.loaded || isSubmitting}
+          disabled={!clerk.loaded || !isSignInLoaded || !signIn || isSubmitting}
           onClick={handleGoogleSignIn}
         >
           <GoogleIcon />
