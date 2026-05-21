@@ -94,6 +94,7 @@ const GoogleOnlySignIn = () => {
             {error}
           </p>
         )}
+        <div id="clerk-captcha" className="mt-4" />
       </div>
     </section>
   )
