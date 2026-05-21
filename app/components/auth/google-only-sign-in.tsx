@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useClerk, useSignIn } from '@clerk/nextjs'
+import { useClerk } from '@clerk/nextjs'
 
 const GoogleIcon = () => {
   return (
@@ -32,12 +32,16 @@ const GoogleIcon = () => {
 
 const GoogleOnlySignIn = () => {
   const clerk = useClerk()
-  const { isLoaded: isSignInLoaded, signIn } = useSignIn()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const handleGoogleSignIn = async () => {
-    if (!clerk.loaded || !isSignInLoaded || !signIn || isSubmitting) {
+    if (isSubmitting) {
+      return
+    }
+
+    if (!clerk.loaded) {
+      setError('Authentication is still loading. Please try again in a moment.')
       return
     }
 
@@ -45,7 +49,7 @@ const GoogleOnlySignIn = () => {
     setIsSubmitting(true)
 
     try {
-      await signIn.authenticateWithRedirect({
+      await clerk.client.signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
         redirectUrlComplete: '/',
@@ -78,7 +82,7 @@ const GoogleOnlySignIn = () => {
         <button
           type="button"
           className="auth-provider-button flex h-11 w-full items-center justify-center gap-3 rounded-lg border px-4 text-sm font-medium leading-none tracking-normal shadow-sm transition focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={!clerk.loaded || !isSignInLoaded || !signIn || isSubmitting}
+          disabled={isSubmitting}
           onClick={handleGoogleSignIn}
         >
           <GoogleIcon />
