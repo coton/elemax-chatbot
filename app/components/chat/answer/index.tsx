@@ -1,73 +1,60 @@
 'use client'
 import type { FC } from 'react'
 import type { FeedbackFunc } from '../type'
-import type { ChatItem, MessageRating, VisionFile } from '@/types/app'
+import type { ChatItem, VisionFile } from '@/types/app'
 import type { Emoji } from '@/types/tools'
-import { HandThumbDownIcon, HandThumbUpIcon } from '@heroicons/react/24/outline'
 import React from 'react'
-import { useTranslation } from 'react-i18next'
-import Button from '@/app/components/base/button'
+import { createPortal } from 'react-dom'
+import copy from 'copy-to-clipboard'
 import StreamdownMarkdown from '@/app/components/base/streamdown-markdown'
-import Tooltip from '@/app/components/base/tooltip'
 import WorkflowProcess from '@/app/components/workflow/workflow-process'
-import { randomString } from '@/utils/string'
+import Toast from '@/app/components/base/toast'
 import ImageGallery from '../../base/image-gallery'
 import LoadingAnim from '../loading-anim'
 import s from '../style.module.css'
 import Thought from '../thought'
+import { getActiveAnswerVariant, getActiveAnswerVariantIndex, getAnswerVariantCount } from '@/utils/chat-variants'
 
-function OperationBtn({ innerContent, onClick, className }: { innerContent: React.ReactNode, onClick?: () => void, className?: string }) {
-  return (
-    <div
-      className={`relative box-border flex items-center justify-center h-7 w-7 p-0.5 rounded-lg bg-white cursor-pointer text-gray-500 hover:text-gray-800 ${className ?? ''}`}
-      style={{ boxShadow: '0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.05)' }}
-      onClick={onClick && onClick}
-    >
-      {innerContent}
-    </div>
-  )
-}
-
-const OpeningStatementIcon: FC<{ className?: string }> = ({ className }) => (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path fillRule="evenodd" clipRule="evenodd" d="M6.25002 1C3.62667 1 1.50002 3.12665 1.50002 5.75C1.50002 6.28 1.58702 6.79071 1.7479 7.26801C1.7762 7.35196 1.79285 7.40164 1.80368 7.43828L1.80722 7.45061L1.80535 7.45452C1.79249 7.48102 1.77339 7.51661 1.73766 7.58274L0.911727 9.11152C0.860537 9.20622 0.807123 9.30503 0.770392 9.39095C0.733879 9.47635 0.674738 9.63304 0.703838 9.81878C0.737949 10.0365 0.866092 10.2282 1.05423 10.343C1.21474 10.4409 1.38213 10.4461 1.475 10.4451C1.56844 10.444 1.68015 10.4324 1.78723 10.4213L4.36472 10.1549C4.406 10.1506 4.42758 10.1484 4.44339 10.1472L4.44542 10.147L4.45161 10.1492C4.47103 10.1562 4.49738 10.1663 4.54285 10.1838C5.07332 10.3882 5.64921 10.5 6.25002 10.5C8.87338 10.5 11 8.37335 11 5.75C11 3.12665 8.87338 1 6.25002 1ZM4.48481 4.29111C5.04844 3.81548 5.7986 3.9552 6.24846 4.47463C6.69831 3.9552 7.43879 3.82048 8.01211 4.29111C8.58544 4.76175 8.6551 5.562 8.21247 6.12453C7.93825 6.47305 7.24997 7.10957 6.76594 7.54348C6.58814 7.70286 6.49924 7.78255 6.39255 7.81466C6.30103 7.84221 6.19589 7.84221 6.10436 7.81466C5.99767 7.78255 5.90878 7.70286 5.73098 7.54348C5.24694 7.10957 4.55867 6.47305 4.28444 6.12453C3.84182 5.562 3.92117 4.76675 4.48481 4.29111Z" fill="#667085" />
+const LikeIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
+    <path d="M14.5998 8.00033H21C22.1046 8.00033 23 8.89576 23 10.0003V12.1047C23 12.3659 22.9488 12.6246 22.8494 12.8662L19.755 20.3811C19.6007 20.7558 19.2355 21.0003 18.8303 21.0003H2C1.44772 21.0003 1 20.5526 1 20.0003V10.0003C1 9.44804 1.44772 9.00033 2 9.00033H5.48184C5.80677 9.00033 6.11143 8.84246 6.29881 8.57701L11.7522 0.851355C11.8947 0.649486 12.1633 0.581978 12.3843 0.692483L14.1984 1.59951C15.25 2.12534 15.7931 3.31292 15.5031 4.45235L14.5998 8.00033ZM7 10.5878V19.0003H18.1606L21 12.1047V10.0003H14.5998C13.2951 10.0003 12.3398 8.77128 12.6616 7.50691L13.5649 3.95894C13.6229 3.73105 13.5143 3.49353 13.3039 3.38837L12.6428 3.0578L7.93275 9.73038C7.68285 10.0844 7.36341 10.3746 7 10.5878ZM5 11.0003H3V19.0003H5V11.0003Z" />
   </svg>
 )
 
-const RatingIcon: FC<{ isLike: boolean }> = ({ isLike }) => {
-  return isLike ? <HandThumbUpIcon className="w-4 h-4" /> : <HandThumbDownIcon className="w-4 h-4" />
-}
+const DislikeIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
+    <path d="M9.40017 16H3C1.89543 16 1 15.1046 1 14V11.8957C1 11.6344 1.05118 11.3757 1.15064 11.1342L4.24501 3.61925C4.3993 3.24455 4.76447 3 5.16969 3H22C22.5523 3 23 3.44772 23 4V14C23 14.5523 22.5523 15 22 15H18.5182C18.1932 15 17.8886 15.1579 17.7012 15.4233L12.2478 23.149C12.1053 23.3508 11.8367 23.4184 11.6157 23.3078L9.80163 22.4008C8.74998 21.875 8.20687 20.6874 8.49694 19.548L9.40017 16ZM17 13.4125V5H5.83939L3 11.8957V14H9.40017C10.7049 14 11.6602 15.229 11.3384 16.4934L10.4351 20.0414C10.3771 20.2693 10.4857 20.5068 10.6961 20.612L11.3572 20.9425L16.0673 14.27C16.3172 13.9159 16.6366 13.6257 17 13.4125ZM19 13H21V5H19V13Z" />
+  </svg>
+)
 
-const EditIcon: FC<{ className?: string }> = ({ className }) => {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <path d="M14 11.9998L13.3332 12.7292C12.9796 13.1159 12.5001 13.3332 12.0001 13.3332C11.5001 13.3332 11.0205 13.1159 10.6669 12.7292C10.3128 12.3432 9.83332 12.1265 9.33345 12.1265C8.83359 12.1265 8.35409 12.3432 7.99998 12.7292M2 13.3332H3.11636C3.44248 13.3332 3.60554 13.3332 3.75899 13.2963C3.89504 13.2637 4.0251 13.2098 4.1444 13.1367C4.27895 13.0542 4.39425 12.9389 4.62486 12.7083L13 4.33316C13.5523 3.78087 13.5523 2.88544 13 2.33316C12.4477 1.78087 11.5523 1.78087 11 2.33316L2.62484 10.7083C2.39424 10.9389 2.27894 11.0542 2.19648 11.1888C2.12338 11.3081 2.0695 11.4381 2.03684 11.5742C2 11.7276 2 11.8907 2 12.2168V13.3332Z" stroke="#6B7280" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
+const CopyIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-4 w-4">
+    <path d="M7 4V2H17V4H20.0066C20.5552 4 21 4.44495 21 4.9934V21.0066C21 21.5552 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5551 3 21.0066V4.9934C3 4.44476 3.44495 4 3.9934 4H7ZM7 6H5V20H19V6H17V8H7V6ZM9 4V6H15V4H9Z" />
+  </svg>
+)
 
-export const EditIconSolid: FC<{ className?: string }> = ({ className }) => {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <path fillRule="evenodd" clip-rule="evenodd" d="M10.8374 8.63108C11.0412 8.81739 11.0554 9.13366 10.8691 9.33747L10.369 9.88449C10.0142 10.2725 9.52293 10.5001 9.00011 10.5001C8.47746 10.5001 7.98634 10.2727 7.63157 9.8849C7.45561 9.69325 7.22747 9.59515 7.00014 9.59515C6.77271 9.59515 6.54446 9.69335 6.36846 9.88517C6.18177 10.0886 5.86548 10.1023 5.66201 9.91556C5.45853 9.72888 5.44493 9.41259 5.63161 9.20911C5.98678 8.82201 6.47777 8.59515 7.00014 8.59515C7.52251 8.59515 8.0135 8.82201 8.36867 9.20911L8.36924 9.20974C8.54486 9.4018 8.77291 9.50012 9.00011 9.50012C9.2273 9.50012 9.45533 9.40182 9.63095 9.20979L10.131 8.66276C10.3173 8.45895 10.6336 8.44476 10.8374 8.63108Z" fill="#6B7280" />
-      <path fillRule="evenodd" clip-rule="evenodd" d="M7.89651 1.39656C8.50599 0.787085 9.49414 0.787084 10.1036 1.39656C10.7131 2.00604 10.7131 2.99419 10.1036 3.60367L3.82225 9.88504C3.81235 9.89494 3.80254 9.90476 3.79281 9.91451C3.64909 10.0585 3.52237 10.1855 3.3696 10.2791C3.23539 10.3613 3.08907 10.4219 2.93602 10.4587C2.7618 10.5005 2.58242 10.5003 2.37897 10.5001C2.3652 10.5001 2.35132 10.5001 2.33732 10.5001H1.50005C1.22391 10.5001 1.00005 10.2763 1.00005 10.0001V9.16286C1.00005 9.14886 1.00004 9.13497 1.00003 9.1212C0.999836 8.91776 0.999669 8.73838 1.0415 8.56416C1.07824 8.4111 1.13885 8.26479 1.22109 8.13058C1.31471 7.97781 1.44166 7.85109 1.58566 7.70736C1.5954 7.69764 1.60523 7.68783 1.61513 7.67793L7.89651 1.39656Z" fill="#6B7280" />
-    </svg>
-  )
-}
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="remixicon h-5 w-5">
+    <path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z" />
+  </svg>
+)
 
-const IconWrapper: FC<{ children: React.ReactNode | string }> = ({ children }) => {
-  return (
-    <div className="rounded-lg h-6 w-6 flex items-center justify-center hover:bg-gray-100">
-      {children}
-    </div>
-  )
-}
+const ChevronRightIcon = ({ className = '' }: { className?: string }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} data-icon="ChevronRight" aria-hidden="true">
+    <g id="chevron-right">
+      <path id="Icon" d="M5.25 10.5L8.75 7L5.25 3.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  </svg>
+)
 
 interface IAnswerProps {
   item: ChatItem
   feedbackDisabled: boolean
   onFeedback?: FeedbackFunc
+  onRetry?: (answer: ChatItem) => void
+  onVariantChange?: (answer: ChatItem, index: number) => void
   isResponding?: boolean
+  isSendLocked?: boolean
   allToolIcons?: Record<string, string | Emoji>
   suggestionClick?: (suggestion: string) => void
 }
@@ -77,78 +64,85 @@ const Answer: FC<IAnswerProps> = ({
   item,
   feedbackDisabled = false,
   onFeedback,
+  onVariantChange,
   isResponding,
   allToolIcons,
-  suggestionClick = () => { },
 }) => {
-  const { id, content, feedback, agent_thoughts, workflowProcess, suggestedQuestions = [] } = item
+  const activeItem = getActiveAnswerVariant(item) as ChatItem
+  const { id, content, feedback, agent_thoughts, workflowProcess } = activeItem
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
+  const isStreaming = !!isResponding || !!activeItem.isRetrying
+  const variantCount = getAnswerVariantCount(item)
+  const activeVariantIndex = getActiveAnswerVariantIndex(item)
 
-  const { t } = useTranslation()
+  const feedbackEnabled = !feedbackDisabled && !item.feedbackDisabled
+  const feedbackActionEnabled = feedbackEnabled && !isStreaming
+  const activeRating = feedback?.rating
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = React.useState(false)
+  const [feedbackContent, setFeedbackContent] = React.useState('')
+  const [feedbackSubmitting, setFeedbackSubmitting] = React.useState(false)
 
-  /**
-   * Render feedback results (distinguish between users and administrators)
-   * User reviews cannot be cancelled in Console
-   * @param rating feedback result
-   * @param isUserFeedback Whether it is user's feedback
-   * @returns comp
-   */
-  const renderFeedbackRating = (rating: MessageRating | undefined) => {
-    if (!rating) { return null }
-
-    const isLike = rating === 'like'
-    const ratingIconClassname = isLike ? 'text-primary-600 bg-primary-100 hover:bg-primary-200' : 'text-red-600 bg-red-100 hover:bg-red-200'
-    // The tooltip is always displayed, but the content is different for different scenarios.
-    return (
-      <Tooltip
-        selector={`user-feedback-${randomString(16)}`}
-        content={isLike ? '取消赞同' : '取消反对'}
-      >
-        <div
-          className="relative box-border flex items-center justify-center h-7 w-7 p-0.5 rounded-lg bg-white cursor-pointer text-gray-500 hover:text-gray-800"
-          style={{ boxShadow: '0px 4px 6px -1px rgba(0, 0, 0, 0.1), 0px 2px 4px -2px rgba(0, 0, 0, 0.05)' }}
-          onClick={async () => {
-            await onFeedback?.(id, { rating: null })
-          }}
-        >
-          <div className={`${ratingIconClassname} rounded-lg h-6 w-6 flex items-center justify-center`}>
-            <RatingIcon isLike={isLike} />
-          </div>
-        </div>
-      </Tooltip>
-    )
+  const handleCopy = () => {
+    if (copy(content || '')) { Toast.notify({ type: 'success', message: 'Copied successfully' }) }
   }
 
-  /**
-   * Different scenarios have different operation items.
-   * @returns comp
-   */
-  const renderItemOperation = () => {
-    const userOperation = () => {
-      return feedback?.rating
-        ? null
-        : (
-          <div className="flex gap-1">
-            <Tooltip selector={`user-feedback-${randomString(16)}`} content={t('common.operation.like') as string}>
-              {OperationBtn({ innerContent: <IconWrapper><RatingIcon isLike={true} /></IconWrapper>, onClick: () => onFeedback?.(id, { rating: 'like' }) })}
-            </Tooltip>
-            <Tooltip selector={`user-feedback-${randomString(16)}`} content={t('common.operation.dislike') as string}>
-              {OperationBtn({ innerContent: <IconWrapper><RatingIcon isLike={false} /></IconWrapper>, onClick: () => onFeedback?.(id, { rating: 'dislike' }) })}
-            </Tooltip>
-          </div>
-        )
+  const handleLike = () => {
+    if (!feedbackEnabled) { return }
+    onFeedback?.(id, { rating: 'like' })
+  }
+
+  const handleDislike = () => {
+    if (!feedbackEnabled) { return }
+    setFeedbackContent(feedback?.content || '')
+    setFeedbackDialogOpen(true)
+  }
+
+  const handleCancelFeedback = () => {
+    if (feedbackSubmitting) { return }
+    setFeedbackDialogOpen(false)
+  }
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackEnabled || feedbackSubmitting) { return }
+
+    const trimmedFeedbackContent = feedbackContent.trim()
+    if (!trimmedFeedbackContent) {
+      Toast.notify({ type: 'warning', message: 'Feedback content cannot be empty' })
+      return
     }
 
-    return (
-      <div className={`${s.itemOperation} flex gap-2`}>
-        {userOperation()}
-      </div>
-    )
+    setFeedbackSubmitting(true)
+    try {
+      await onFeedback?.(id, { rating: 'dislike', content: trimmedFeedbackContent })
+      setFeedbackDialogOpen(false)
+    }
+    finally {
+      setFeedbackSubmitting(false)
+    }
   }
+
+  React.useEffect(() => {
+    if (!feedbackDialogOpen) { return }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !feedbackSubmitting) { setFeedbackDialogOpen(false) }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [feedbackDialogOpen, feedbackSubmitting])
 
   const getImgs = (list?: VisionFile[]) => {
     if (!list) { return [] }
     return list.filter(file => file.type === 'image' && file.belongs_to === 'assistant')
+  }
+
+  const handlePreviousVariant = () => {
+    onVariantChange?.(item, activeVariantIndex - 1)
+  }
+
+  const handleNextVariant = () => {
+    onVariantChange?.(item, activeVariantIndex + 1)
   }
 
   const agentModeAnswer = (
@@ -178,8 +172,8 @@ const Answer: FC<IAnswerProps> = ({
 
   return (
     <div key={id}>
-      <div className="flex items-start">
-        <div className={`${s.answerIcon} w-10 h-10 shrink-0`}>
+      <div className="mb-2 flex last:mb-0">
+        <div className={`${s.answerIcon} relative h-10 w-10 shrink-0`}>
           {isResponding
             && (
               <div className={s.typeingIcon}>
@@ -187,13 +181,13 @@ const Answer: FC<IAnswerProps> = ({
               </div>
             )}
         </div>
-        <div className={`${s.answerWrap} max-w-[calc(100%-3rem)]`}>
-          <div className={`${s.answer} relative text-sm text-gray-900`}>
-            <div className={`ml-2 py-3 px-4 bg-gray-100 rounded-tr-2xl rounded-b-2xl ${workflowProcess && 'min-w-[480px]'}`}>
+        <div className={`${s.answerWrap} chat-answer-container group ml-4 w-0 grow pb-4`}>
+          <div className={`${s.answer} relative text-sm text-text-secondary`}>
+            <div className={`assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-text-secondary ${workflowProcess ? 'w-full' : ''}`}>
               {workflowProcess && (
                 <WorkflowProcess data={workflowProcess} hideInfo />
               )}
-              {(isResponding && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
+              {(isStreaming && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
                 ? (
                   <div className="flex items-center justify-center w-6 h-5">
                     <LoadingAnim type="text" />
@@ -204,26 +198,114 @@ const Answer: FC<IAnswerProps> = ({
                   : (
                     <StreamdownMarkdown content={content} />
                   ))}
-              {suggestedQuestions.length > 0 && (
-                <div className="mt-3">
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {suggestedQuestions.map((suggestion, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <Button className="text-sm" type="link" onClick={() => suggestionClick(suggestion)}>{suggestion}</Button>
-                      </div>
-                    ))}
-                  </div>
+              {variantCount > 1 && (
+                <div className="flex items-center justify-center pt-3.5 text-sm">
+                  <button
+                    type="button"
+                    className={activeVariantIndex > 0 ? 'opacity-100' : 'opacity-30'}
+                    disabled={activeVariantIndex <= 0}
+                    aria-label="Previous answer"
+                    onClick={handlePreviousVariant}
+                  >
+                    <ChevronRightIcon className="h-[14px] w-[14px] rotate-180 text-text-primary" />
+                  </button>
+                  <span className="px-2 text-xs text-text-primary">{activeVariantIndex + 1} /{variantCount}</span>
+                  <button
+                    type="button"
+                    className={activeVariantIndex < variantCount - 1 ? 'opacity-100' : 'opacity-30'}
+                    disabled={activeVariantIndex >= variantCount - 1}
+                    aria-label="Next answer"
+                    onClick={handleNextVariant}
+                  >
+                    <ChevronRightIcon className="h-[14px] w-[14px] text-text-primary" />
+                  </button>
                 </div>
               )}
-            </div>
-            <div className="absolute top-[-14px] right-[-14px] flex flex-row justify-end gap-1">
-              {!feedbackDisabled && !item.feedbackDisabled && renderItemOperation()}
-              {/* User feedback must be displayed */}
-              {!feedbackDisabled && renderFeedbackRating(feedback?.rating)}
+              <div className="absolute flex justify-end gap-1 -bottom-4 right-2" style={{}}>
+                {feedbackActionEnabled && (
+                  <div className="answer-actionbar ml-1 items-center gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm hidden group-hover:flex">
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-m ${activeRating === 'like' ? 'action-btn-active' : ''}`}
+                      aria-pressed={activeRating === 'like'}
+                      onClick={handleLike}
+                    >
+                      <LikeIcon />
+                    </button>
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-m hover:bg-state-destructive-hover hover:text-text-destructive ${activeRating === 'dislike' ? 'action-btn-destructive' : ''}`}
+                      aria-pressed={activeRating === 'dislike'}
+                      onClick={handleDislike}
+                    >
+                      <DislikeIcon />
+                    </button>
+                  </div>
+                )}
+                <div className="answer-actionbar ml-1 hidden items-center gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm group-hover:flex">
+                  <button type="button" className="action-btn action-btn-m" aria-label="Copy message" onClick={handleCopy}>
+                    <CopyIcon />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      {feedbackDialogOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px]"
+          role="presentation"
+          onClick={handleCancelFeedback}
+        >
+          <div
+            className="flex max-h-[80%] w-full max-w-[480px] flex-col rounded-2xl border-[0.5px] border-components-panel-border bg-components-panel-bg-blur shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-dialog-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="relative shrink-0 p-6 pb-3 pr-14 text-text-primary">
+              <div id="feedback-dialog-title" className="text-[20px] font-semibold leading-7">Provide Feedback</div>
+              <div className="system-xs-regular mt-1 text-text-tertiary">Please tell us what went wrong with this response</div>
+              <button
+                type="button"
+                className="absolute right-5 top-5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-text-tertiary hover:bg-state-base-hover hover:text-text-secondary"
+                aria-label="Close feedback dialog"
+                disabled={feedbackSubmitting}
+                onClick={handleCancelFeedback}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-3">
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-2 block text-[13px] font-semibold leading-5 text-text-secondary" htmlFor={`feedback-content-${id}`}>Feedback Content</label>
+                  <textarea
+                    id={`feedback-content-${id}`}
+                    className="min-h-20 w-full resize-y appearance-none rounded-md border border-transparent bg-components-panel-on-panel-item-bg px-3 py-2 text-[13px] leading-5 text-text-secondary caret-primary-600 outline-none placeholder:text-text-tertiary hover:border-components-panel-border hover:bg-components-panel-on-panel-item-bg focus:border-state-accent-border focus:bg-components-panel-on-panel-item-bg focus:shadow-xs"
+                    placeholder="Please describe what went wrong or how we can improve..."
+                    rows={4}
+                    value={feedbackContent}
+                    disabled={feedbackSubmitting}
+                    autoFocus
+                    onChange={event => setFeedbackContent(event.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex shrink-0 justify-between p-6 pt-5">
+              <div />
+              <div className="flex items-center">
+                <button type="button" className="btn disabled:btn-disabled btn-secondary btn-medium" disabled={feedbackSubmitting} onClick={handleCancelFeedback}>Cancel</button>
+                <button type="button" className="btn disabled:btn-disabled btn-primary btn-medium ml-2" disabled={feedbackSubmitting} onClick={handleSubmitFeedback}>Submit</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   )
 }

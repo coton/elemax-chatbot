@@ -44,30 +44,94 @@
   --color-danger-fg: #cf222e;
 }
 
+@mixin dark {
+  color-scheme: dark;
+  --color-prettylights-syntax-comment: #8b949e;
+  --color-prettylights-syntax-constant: #79c0ff;
+  --color-prettylights-syntax-entity: #d2a8ff;
+  --color-prettylights-syntax-storage-modifier-import: #c9d1d9;
+  --color-prettylights-syntax-entity-tag: #7ee787;
+  --color-prettylights-syntax-keyword: #ff7b72;
+  --color-prettylights-syntax-string: #a5d6ff;
+  --color-prettylights-syntax-variable: #ffa657;
+  --color-prettylights-syntax-brackethighlighter-unmatched: #f85149;
+  --color-prettylights-syntax-invalid-illegal-text: #f0f6fc;
+  --color-prettylights-syntax-invalid-illegal-bg: #8e1519;
+  --color-prettylights-syntax-carriage-return-text: #f0f6fc;
+  --color-prettylights-syntax-carriage-return-bg: #b62324;
+  --color-prettylights-syntax-string-regexp: #7ee787;
+  --color-prettylights-syntax-markup-list: #f2cc60;
+  --color-prettylights-syntax-markup-heading: #1f6feb;
+  --color-prettylights-syntax-markup-italic: #c9d1d9;
+  --color-prettylights-syntax-markup-bold: #c9d1d9;
+  --color-prettylights-syntax-markup-deleted-text: #ffdcd7;
+  --color-prettylights-syntax-markup-deleted-bg: #67060c;
+  --color-prettylights-syntax-markup-inserted-text: #aff5b4;
+  --color-prettylights-syntax-markup-inserted-bg: #033a16;
+  --color-prettylights-syntax-markup-changed-text: #ffdfb6;
+  --color-prettylights-syntax-markup-changed-bg: #5a1e02;
+  --color-prettylights-syntax-markup-ignored-text: #c9d1d9;
+  --color-prettylights-syntax-markup-ignored-bg: #1158c7;
+  --color-prettylights-syntax-meta-diff-range: #d2a8ff;
+  --color-prettylights-syntax-brackethighlighter-angle: #8b949e;
+  --color-prettylights-syntax-sublimelinter-gutter-mark: #484f58;
+  --color-prettylights-syntax-constant-other-reference-link: #a5d6ff;
+  --color-fg-default: #e5e7eb;
+  --color-fg-muted: #9ca3af;
+  --color-fg-subtle: #64748b;
+  --color-canvas-default: transparent;
+  --color-canvas-subtle: #0f172a;
+  --color-border-default: #263244;
+  --color-border-muted: #1f2937;
+  --color-neutral-muted: rgba(148, 163, 184, 0.18);
+  --color-accent-fg: #60a5fa;
+  --color-accent-emphasis: #3b82f6;
+  --color-attention-subtle: rgba(202, 138, 4, 0.18);
+  --color-danger-fg: #f87171;
+}
+
 .markdown-body {
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   margin: 0;
-  color: #101828;
+  color: var(--color-fg-default);
   background-color: var(--color-canvas-default);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
   word-wrap: break-word;
+  --markdown-table-bg: var(--color-canvas-default);
+  --markdown-table-header-bg: var(--color-canvas-subtle);
+  --markdown-table-border: var(--color-border-default);
+  --markdown-table-border-subtle: var(--color-border-muted);
+  --markdown-table-header-text: var(--color-fg-muted);
+  --markdown-table-cell-text: var(--color-fg-default);
 }
 
 .light {
   @include light;
 }
 
-:root {
-  @include light;
+.theme-light .markdown-body {
+  --markdown-table-bg: #ffffff;
+  --markdown-table-header-bg: #f2f4f7;
+  --markdown-table-border: var(--app-divider);
+  --markdown-table-border-subtle: var(--app-border);
+  --markdown-table-header-text: var(--app-text-tertiary);
+  --markdown-table-cell-text: var(--app-text-secondary);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    @include light;
-  }
+.theme-dark .markdown-body {
+  --markdown-table-bg: var(--app-panel-muted-bg);
+  --markdown-table-header-bg: var(--dark-surface-hover);
+  --markdown-table-border: rgba(255, 255, 255, 0.14);
+  --markdown-table-border-subtle: rgba(255, 255, 255, 0.08);
+  --markdown-table-header-text: var(--app-text-tertiary);
+  --markdown-table-cell-text: var(--app-text-secondary);
+}
+
+:root {
+  @include dark;
 }
 
 .markdown-body .octicon {
@@ -244,11 +308,14 @@
 
 .markdown-body table {
   border-spacing: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
   display: block;
   width: max-content;
   max-width: 100%;
   overflow: auto;
+  border: 1px solid var(--markdown-table-border);
+  border-radius: 8px;
+  background-color: var(--markdown-table-bg);
 }
 
 .markdown-body td,
@@ -414,7 +481,8 @@
   margin-top: 0 !important;
 }
 
-.markdown-body>*:last-child {
+.markdown-body>*:last-child,
+.streamdown-markdown > .space-y-4 > :last-child {
   margin-bottom: 0 !important;
 }
 
@@ -590,23 +658,59 @@
   margin-bottom: 16px;
 }
 
-.markdown-body table th {
-  font-weight: var(--base-text-weight-semibold, 600);
-}
-
 .markdown-body table th,
 .markdown-body table td {
   padding: 6px 13px;
-  border: 1px solid var(--color-border-default);
+  border: 0;
+  white-space: nowrap;
+}
+
+.markdown-body table th {
+  color: var(--markdown-table-header-text);
+  font-size: 12px;
+  font-weight: var(--base-text-weight-medium, 500);
+  background-color: var(--markdown-table-header-bg);
+}
+
+.markdown-body table td {
+  color: var(--markdown-table-cell-text);
+  font-size: 13px;
+  font-weight: var(--base-text-weight-normal, 400);
 }
 
 .markdown-body table tr {
-  background-color: var(--color-canvas-default);
-  border-top: 1px solid var(--color-border-muted);
+  background-color: var(--markdown-table-bg);
 }
 
-.markdown-body table tr:nth-child(2n) {
-  background-color: var(--color-canvas-subtle);
+.markdown-body table tr>th:not(:last-child),
+.markdown-body table tr>td:not(:last-child) {
+  border-right: 1px solid var(--markdown-table-border-subtle);
+}
+
+.markdown-body table tbody tr:first-child td {
+  border-top: 1px solid var(--markdown-table-border);
+}
+
+.markdown-body table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--markdown-table-border-subtle);
+}
+
+.markdown-body [data-streamdown="table-wrapper"] > div:first-child button {
+  color: var(--markdown-table-header-text);
+}
+
+.markdown-body [data-streamdown="table-wrapper"] > div:first-child button:hover {
+  color: var(--color-fg-default);
+}
+
+.markdown-body [data-streamdown="table-header"] {
+  background-color: var(--markdown-table-header-bg);
+}
+
+.markdown-body [data-streamdown="table-body"],
+.markdown-body [data-streamdown="table-row"] {
+  border-color: var(--markdown-table-border-subtle);
+  background-color: var(--markdown-table-bg);
 }
 
 .markdown-body table img {
@@ -763,7 +867,7 @@
 .markdown-body .highlight pre,
 .markdown-body pre {
   padding: 16px;
-  background: #fff;
+  background: #0b1220;
   overflow: auto;
   font-size: 85%;
   line-height: 1.45;

@@ -16,6 +16,19 @@
           "value": "no-cache"
         }
       ]
+    },
+    {
+      "source": "/files/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }

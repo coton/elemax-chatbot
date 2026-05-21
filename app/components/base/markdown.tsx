@@ -5,7 +5,7 @@ import RemarkBreaks from 'remark-breaks'
 import RehypeKatex from 'rehype-katex'
 import RemarkGfm from 'remark-gfm'
 import SyntaxHighlighter from 'react-syntax-highlighter'
-import { atelierHeathLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { atelierHeathDark } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 
 export function Markdown(props: { content: string }) {
   return (
@@ -23,7 +23,7 @@ export function Markdown(props: { content: string }) {
                 <SyntaxHighlighter
                   {...props}
                   children={String(children).replace(/\n$/, '')}
-                  style={atelierHeathLight}
+                  style={atelierHeathDark}
                   language={match[1]}
                   showLineNumbers
                   PreTag="div"

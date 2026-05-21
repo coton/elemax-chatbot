@@ -16,12 +16,17 @@ const translation = {
     configDisabled:
       '前回のセッション設定がこのセッションで使用されています。',
     startChat: '開始',
+    deleteConversation: '会話を削除',
+    deleteConversationConfirm: 'この会話を削除しますか？この操作は元に戻せません。',
+    deleteConversationSuccess: '会話を削除しました',
+    deleteConversationFailed: '会話の削除に失敗しました',
     privacyPolicyLeft:
       'ご利用前に、',
     privacyPolicyMiddle:
       'プライバシーポリシー',
     privacyPolicyRight:
       ' をお読みください。',
+    inputPlaceholder: 'Max AI と話す',
   },
   errorMessage: {
     valueOfVarRequired: '変数の値は空にできません',

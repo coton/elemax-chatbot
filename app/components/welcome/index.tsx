@@ -27,7 +27,6 @@ export interface IWelcomeProps {
 }
 
 const Welcome: FC<IWelcomeProps> = ({
-  conversationName,
   hasSetInputs,
   isPublicVersion,
   siteInfo,
@@ -77,14 +76,6 @@ const Welcome: FC<IWelcomeProps> = ({
   const { notify } = Toast
   const logError = (message: string) => {
     notify({ type: 'error', message, duration: 3000 })
-  }
-
-  const renderHeader = () => {
-    return (
-      <div className='absolute top-0 left-0 right-0 flex items-center justify-between border-b border-gray-100 mobile:h-12 tablet:h-16 px-8 bg-white'>
-        <div className='text-gray-900'>{conversationName}</div>
-      </div>
-    )
   }
 
   const renderInputs = () => {
@@ -172,33 +163,38 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   const canChat = () => {
-    const vars = promptConfig?.prompt_variables ?? [];
+    const vars = promptConfig?.prompt_variables ?? []
 
-    const hasEmptyRequired = vars.some(v => {
-      const isRequired = v?.required ?? true;
-      if (!isRequired) return false;
+    const hasEmptyRequired = vars.some((v) => {
+      const isRequired = v?.required ?? true
+      if (!isRequired) {
+        return false
+      }
 
-      const val = inputs?.[v.key];
+      const val = inputs?.[v.key]
 
-      if (typeof val === 'string') return val.trim() === '';
+      if (typeof val === 'string') {
+        return val.trim() === ''
+      }
 
-      return val === undefined || val === null;
-    });
+      return val === undefined || val === null
+    })
 
     if (hasEmptyRequired) {
-      logError(t('app.errorMessage.valueOfVarRequired'));
-      return false;
+      logError(t('app.errorMessage.valueOfVarRequired'))
+      return false
     }
 
-    return true;
-  };
+    return true
+  }
 
   const handleChat = () => {
     if (!canChat()) { return }
 
     Object.keys(inputs).forEach((key) => {
-      if (!inputs[key])
+      if (!inputs[key]) {
         delete inputs[key]
+      }
     })
 
     onStartChat(inputs)
@@ -351,9 +347,8 @@ const Welcome: FC<IWelcomeProps> = ({
   }
 
   return (
-    <div className='relative mobile:min-h-[48px] tablet:min-h-[64px]'>
-      {hasSetInputs && renderHeader()}
-      <div className='mx-auto pc:w-[794px] max-w-full mobile:w-full px-3.5'>
+    <div className='relative'>
+      <div className='mx-auto w-full max-w-[768px] px-4'>
         {/*  Has't set inputs  */}
         {
           !hasSetInputs && (

@@ -1,19 +1,24 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { client, getInfo } from '@/app/api/utils/common'
+import { client, getInfo, handleRouteError } from '@/app/api/utils/common'
 
 export async function POST(request: NextRequest, { params }: {
   params: Promise<{ conversationId: string }>
 }) {
-  const body = await request.json()
-  const {
-    auto_generate,
-    name,
-  } = body
-  const { conversationId } = await params
-  const { user } = getInfo(request)
+  try {
+    const body = await request.json()
+    const {
+      auto_generate,
+      name,
+    } = body
+    const { conversationId } = await params
+    const { user } = await getInfo(request)
 
-  // auto generate name
-  const { data } = await client.renameConversation(conversationId, name, user, auto_generate)
-  return NextResponse.json(data)
+    // auto generate name
+    const { data } = await client.renameConversation(conversationId, name, user, auto_generate)
+    return NextResponse.json(data)
+  }
+  catch (error: any) {
+    return handleRouteError(error)
+  }
 }

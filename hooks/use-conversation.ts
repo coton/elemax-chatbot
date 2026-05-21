@@ -26,6 +26,12 @@ function useConversation() {
     return id
   }
 
+  const clearConversationIdFromStorage = (appId: string) => {
+    const conversationIdInfo = globalThis.localStorage?.getItem(storageConversationIdKey) ? JSON.parse(globalThis.localStorage?.getItem(storageConversationIdKey) || '') : {}
+    delete conversationIdInfo[appId]
+    globalThis.localStorage?.setItem(storageConversationIdKey, JSON.stringify(conversationIdInfo))
+  }
+
   const isNewConversation = currConversationId === '-1'
   // input can be updated by user
   const [newConversationInputs, setNewConversationInputs] = useState<Record<string, any> | null>(null)
@@ -53,10 +59,12 @@ function useConversation() {
     getCurrConversationId,
     setCurrConversationId,
     getConversationIdFromStorage,
+    clearConversationIdFromStorage,
     isNewConversation,
     currInputs,
     newConversationInputs,
     existConversationInputs,
+    setNewConversationInputs,
     resetNewConversationInputs,
     setCurrInputs,
     currConversationInfo,

@@ -16,12 +16,17 @@ const translation = {
     configDisabled:
       'Les paramètres de la session précédente ont été utilisés pour cette session.',
     startChat: 'Démarrer la conversation',
+    deleteConversation: 'Supprimer la conversation',
+    deleteConversationConfirm: 'Supprimer cette conversation ? Cette action est irréversible.',
+    deleteConversationSuccess: 'Conversation supprimée',
+    deleteConversationFailed: 'Impossible de supprimer la conversation',
     privacyPolicyLeft:
       'Veuillez lire la ',
     privacyPolicyMiddle:
       'politique de confidentialité ',
     privacyPolicyRight:
       ' fournie par le développeur de l\'application.',
+    inputPlaceholder: 'Parlez à Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'La valeur des variables ne peut pas être vide',

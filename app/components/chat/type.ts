@@ -98,6 +98,7 @@ export interface IChatItem {
   useCurrentUserAvatar?: boolean
   isOpeningStatement?: boolean
   suggestedQuestions?: string[]
+  suggestedQuestionsLoading?: boolean
   log?: { role: string, text: string }[]
   agent_thoughts?: ThoughtItem[]
   message_files?: VisionFile[]

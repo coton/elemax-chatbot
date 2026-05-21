@@ -18,6 +18,12 @@ const translation = {
     dislike: '反对',
     ok: '好的',
   },
+  account: {
+    userMenu: '用户菜单',
+    manageAccount: '管理账号',
+    signOut: '退出登录',
+    signingOut: '正在退出...',
+  },
   imageUploader: {
     uploadFromComputer: '从本地上传',
     uploadFromComputerReadError: '图片读取失败，请重新选择。',

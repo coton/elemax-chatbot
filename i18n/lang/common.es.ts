@@ -18,6 +18,12 @@ const translation = {
     dislike: 'No me gusta',
     ok: 'OK',
   },
+  account: {
+    userMenu: 'Menú de usuario',
+    manageAccount: 'Gestionar cuenta',
+    signOut: 'Cerrar sesión',
+    signingOut: 'Cerrando sesión...',
+  },
   imageUploader: {
     uploadFromComputer: 'Subir desde el ordenador',
     uploadFromComputerReadError: 'La lectura de la imagen falló, por favor inténtelo de nuevo.',

@@ -36,7 +36,7 @@ const Toast = ({
   if (typeof message !== 'string') { return null }
 
   return <div className={classNames(
-    'fixed rounded-md p-4 my-4 mx-8 z-50',
+    'fixed rounded-md p-4 my-4 mx-8 z-[1100]',
     'top-0',
     'right-0',
     type === 'success' ? 'bg-green-50' : '',

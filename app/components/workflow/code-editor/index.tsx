@@ -53,20 +53,24 @@ const CodeEditor: FC<Props> = ({
     })
 
     monaco.editor.defineTheme('blur-theme', {
-      base: 'vs',
+      base: 'vs-dark',
       inherit: true,
       rules: [],
       colors: {
-        'editor.background': '#F2F4F7',
+        'editor.background': '#0f172a',
+        'editor.foreground': '#e5e7eb',
+        'editorLineNumber.foreground': '#64748b',
       },
     })
 
     monaco.editor.defineTheme('focus-theme', {
-      base: 'vs',
+      base: 'vs-dark',
       inherit: true,
       rules: [],
       colors: {
-        'editor.background': '#ffffff',
+        'editor.background': '#111827',
+        'editor.foreground': '#e5e7eb',
+        'editorLineNumber.foreground': '#94a3b8',
       },
     })
   }
@@ -76,7 +80,7 @@ const CodeEditor: FC<Props> = ({
     try {
       return JSON.stringify(value as object, null, 2)
     }
-    catch (e) {
+    catch {
       return value as string
     }
   })()

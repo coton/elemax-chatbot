@@ -16,12 +16,17 @@ const translation = {
     configDisabled:
       'Cài đặt của phiên trước đã được sử dụng cho phiên này.',
     startChat: 'Bắt đầu trò chuyện',
+    deleteConversation: 'Xóa cuộc trò chuyện',
+    deleteConversationConfirm: 'Xóa cuộc trò chuyện này? Không thể hoàn tác thao tác này.',
+    deleteConversationSuccess: 'Đã xóa cuộc trò chuyện',
+    deleteConversationFailed: 'Không thể xóa cuộc trò chuyện',
     privacyPolicyLeft:
       'Vui lòng đọc ',
     privacyPolicyMiddle:
       'chính sách bảo mật',
     privacyPolicyRight:
       ' được cung cấp bởi nhà phát triển ứng dụng.',
+    inputPlaceholder: 'Trò chuyện với Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'Giá trị của biến không thể để trống',

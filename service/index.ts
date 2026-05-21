@@ -1,5 +1,5 @@
 import type { IOnCompleted, IOnData, IOnError, IOnFile, IOnMessageEnd, IOnMessageReplace, IOnNodeFinished, IOnNodeStarted, IOnThought, IOnWorkflowFinished, IOnWorkflowStarted } from './base'
-import { get, post, ssePost } from './base'
+import { del, get, post, ssePost } from './base'
 import type { Feedbacktype } from '@/types/app'
 
 export const sendChatMessage = async (
@@ -40,12 +40,31 @@ export const sendChatMessage = async (
   }, { onData, onCompleted, onThought, onFile, onError, getAbortController, onMessageEnd, onMessageReplace, onNodeStarted, onWorkflowStarted, onWorkflowFinished, onNodeFinished })
 }
 
+export const stopChatMessage = async (taskId: string) => {
+  return post(`chat-messages/${taskId}/stop`, { body: {} }, { silent: true })
+}
+
 export const fetchConversations = async () => {
   return get('conversations', { params: { limit: 100, first_id: '' } })
 }
 
-export const fetchChatList = async (conversationId: string) => {
-  return get('messages', { params: { conversation_id: conversationId, limit: 20, last_id: '' } })
+export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal, firstId?: string | null, limit?: number }) => {
+  const fetchOptions: Record<string, unknown> = {
+    params: { conversation_id: conversationId, limit: options?.limit || 100, first_id: options?.firstId || '' },
+  }
+  if (options?.signal) { fetchOptions.signal = options.signal }
+
+  return get('messages', fetchOptions)
+}
+
+export const fetchSuggestedQuestions = async (messageId: string) => {
+  const res = await get(`messages/${messageId}/suggested`, {}, { silent: true }) as { data?: unknown }
+  if (!Array.isArray(res?.data)) { return [] }
+
+  return res.data
+    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    .map(item => item.trim())
+    .slice(0, 3)
 }
 
 // init value. wait for server update
@@ -59,4 +78,8 @@ export const updateFeedback = async ({ url, body }: { url: string, body: Feedbac
 
 export const generationConversationName = async (id: string) => {
   return post(`conversations/${id}/name`, { body: { auto_generate: true } })
+}
+
+export const deleteConversation = async (id: string) => {
+  return del(`conversations/${id}`)
 }

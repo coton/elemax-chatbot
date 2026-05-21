@@ -16,12 +16,17 @@ const translation = {
     configDisabled:
       'Previous session settings have been used for this session.',
     startChat: 'Start Chat',
+    deleteConversation: 'Delete conversation',
+    deleteConversationConfirm: 'Delete this conversation? This action cannot be undone.',
+    deleteConversationSuccess: 'Conversation deleted',
+    deleteConversationFailed: 'Failed to delete conversation',
     privacyPolicyLeft:
       'Please read the ',
     privacyPolicyMiddle:
       'privacy policy',
     privacyPolicyRight:
       ' provided by the app developer.',
+    inputPlaceholder: 'Talk to Max AI',
   },
   errorMessage: {
     valueOfVarRequired: 'Variables value can not be empty',

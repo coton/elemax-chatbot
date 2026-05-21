@@ -24,7 +24,11 @@ export const getLocaleOnServer = async (): Promise<Locale> => {
     languages = new Negotiator({ headers: negotiatorHeaders }).languages()
   }
 
-  // match locale
-  const matchedLocale = match(languages, locales, i18n.defaultLocale) as Locale
-  return matchedLocale
+  try {
+    const matchedLocale = match(languages, locales, i18n.defaultLocale) as Locale
+    return matchedLocale
+  }
+  catch {
+    return i18n.defaultLocale as Locale
+  }
 }

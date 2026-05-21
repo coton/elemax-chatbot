@@ -1,15 +1,25 @@
-import type { FC } from 'react'
-import React from 'react'
+import { Show } from '@clerk/nextjs'
 
 import type { IMainProps } from '@/app/components'
 import Main from '@/app/components'
+import GoogleOnlySignIn from '@/app/components/auth/google-only-sign-in'
 
-const App: FC<IMainProps> = ({
-  params,
-}: any) => {
+const SignedOutHome = () => {
   return (
-    <Main params={params} />
+    <main className="auth-page flex min-h-screen items-center justify-center px-4">
+      <GoogleOnlySignIn />
+    </main>
   )
 }
 
-export default React.memo(App)
+const App = ({
+  params,
+}: IMainProps) => {
+  return (
+    <Show when="signed-in" fallback={<SignedOutHome />}>
+      <Main params={params} />
+    </Show>
+  )
+}
+
+export default App

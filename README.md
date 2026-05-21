@@ -16,6 +16,13 @@ DIFY_APP_KEY=
 
 # APP URL: This is the API's base URL. If you're using the Dify cloud service, set it to: https://api.dify.ai/v1.
 DIFY_API_URL=
+
+# Clerk auth.
+# Use pk_live_... and sk_live_... on the main/production deployment.
+# Use test keys only for local development or Vercel Preview.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+CLERK_SECRET_KEY=sk_live_...
 ```
 
 Config more in `config/index.ts` file:   
@@ -86,20 +93,26 @@ This repository is ready for Vercel Git automatic deployments.
 apps/elemax-chatbot
 ```
 
-4. Keep the detected framework as **Next.js**. The build settings are also pinned in `vercel.json`:
+4. Keep the framework as **Next.js**. The build settings are pinned in `vercel.json`:
 
 ```bash
 Install Command: pnpm install --frozen-lockfile
 Build Command: pnpm build
+Node.js Version: 20.x
 ```
 
-5. Add these Environment Variables for Production, Preview, and Development:
+5. Add these Environment Variables in Vercel. For the `main` branch Production deployment, use the production Clerk instance keys (`pk_live_...` / `sk_live_...`). Use test keys only for local development or Vercel Preview:
 
 ```bash
 NEXT_PUBLIC_APP_ID=
 DIFY_APP_KEY=
 DIFY_API_URL=https://api.dify.ai/v1
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+CLERK_SECRET_KEY=sk_live_...
 ```
+
+`DIFY_APP_KEY` is the Dify Backend Service API key shown in Dify's **Backend Service API -> API Key** dialog. It is intentionally server-only and must not use a `NEXT_PUBLIC_` prefix.
 
 After the project is connected, Vercel will automatically create preview deployments for pull requests and production deployments for pushes to the production branch configured in Vercel.
 
