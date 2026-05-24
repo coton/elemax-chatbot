@@ -42,6 +42,12 @@ assert.match(
 
 assert.match(
   markdownStyles,
+  /\.theme-light \.markdown-body \{[\s\S]*--markdown-hr-bg:\s*#f3f4f6;[\s\S]*\.theme-dark \.markdown-body \{[\s\S]*--markdown-hr-bg:\s*#88898d;[\s\S]*\.markdown-body hr \{[\s\S]*height:\s*1px;[\s\S]*background-color:\s*var\(--markdown-hr-bg\)/,
+  'message Markdown dividers should use theme-specific colors',
+)
+
+assert.match(
+  markdownStyles,
   /\[data-streamdown="table-header"\][\s\S]*background-color:\s*var\(--markdown-table-header-bg\)/,
   'Streamdown table output should be bridged to the shared Markdown table colors',
 )
