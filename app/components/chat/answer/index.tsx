@@ -6,13 +6,13 @@ import type { Emoji } from '@/types/tools'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import copy from 'copy-to-clipboard'
-import StreamdownMarkdown from '@/app/components/base/streamdown-markdown'
 import WorkflowProcess from '@/app/components/workflow/workflow-process'
 import Toast from '@/app/components/base/toast'
 import ImageGallery from '../../base/image-gallery'
 import LoadingAnim from '../loading-anim'
 import s from '../style.module.css'
 import Thought from '../thought'
+import ThoughtOutput from './thought-output'
 import { getActiveAnswerVariant, getActiveAnswerVariantIndex, getAnswerVariantCount } from '@/utils/chat-variants'
 
 const LikeIcon = () => (
@@ -150,7 +150,7 @@ const Answer: FC<IAnswerProps> = ({
       {agent_thoughts?.map((item, index) => (
         <div key={index}>
           {item.thought && (
-            <StreamdownMarkdown content={item.thought} />
+            <ThoughtOutput content={item.thought} isStreaming={isStreaming} forceThought />
           )}
           {/* {item.tool} */}
           {/* perhaps not use tool */}
@@ -167,6 +167,9 @@ const Answer: FC<IAnswerProps> = ({
           )}
         </div>
       ))}
+      {!!content && (
+        <ThoughtOutput content={content} isStreaming={isStreaming} />
+      )}
     </div>
   )
 
@@ -196,7 +199,7 @@ const Answer: FC<IAnswerProps> = ({
                 : (isAgentMode
                   ? agentModeAnswer
                   : (
-                    <StreamdownMarkdown content={content} />
+                    <ThoughtOutput content={content} isStreaming={isStreaming} />
                   ))}
               {variantCount > 1 && (
                 <div className="flex items-center justify-center pt-3.5 text-sm">

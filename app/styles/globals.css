@@ -314,6 +314,15 @@ textarea::placeholder {
   color: inherit;
 }
 
+.thought-disclosure .thought-markdown.markdown-body {
+  color: inherit !important;
+  background-color: transparent;
+}
+
+.thought-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
 :where(.streamdown-markdown pre, .streamdown-markdown code) {
   background-color: #0b1220;
   color: #dbeafe;
