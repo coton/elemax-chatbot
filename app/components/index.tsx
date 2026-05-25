@@ -921,8 +921,6 @@ const Main: FC<IMainProps> = () => {
     const newList = [...currentChatList, questionItem, placeholderAnswerItem]
     setChatList(newList)
 
-    let isAgentMode = false
-
     // answer
     const responseItem: ChatItem = {
       id: `${Date.now()}`,
@@ -960,13 +958,7 @@ const Main: FC<IMainProps> = () => {
 
         if (message || messageId || newConversationId) { markRespondingConversationStarted(newConversationId || respondingConversationIdRef.current || undefined) }
 
-        if (!isAgentMode) {
-          responseItem.content = responseItem.content + message
-        }
-        else {
-          const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
-          if (lastThought) { lastThought.thought = lastThought.thought + message } // need immer setAutoFreeze
-        }
+        responseItem.content = responseItem.content + message
         if (messageId && !hasSetResponseId) {
           responseItem.id = messageId
           hasSetResponseId = true
@@ -1075,7 +1067,6 @@ const Main: FC<IMainProps> = () => {
 
         markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
 
-        isAgentMode = true
         const response = responseItem as any
         if (thought.message_id && !hasSetResponseId) {
           response.id = thought.message_id
@@ -1089,8 +1080,8 @@ const Main: FC<IMainProps> = () => {
           const lastThought = response.agent_thoughts[response.agent_thoughts.length - 1]
           // thought changed but still the same thought, so update.
           if (lastThought.id === thought.id) {
-            thought.thought = lastThought.thought
-            thought.message_files = lastThought.message_files
+            thought.thought = thought.thought || lastThought.thought
+            thought.message_files = lastThought.message_files || thought.message_files
             responseItem.agent_thoughts![response.agent_thoughts.length - 1] = thought
           }
           else {
@@ -1320,7 +1311,6 @@ const Main: FC<IMainProps> = () => {
       })
     }
 
-    let isAgentMode = false
     let hasSetResponseId = false
     const requestId = sendRequestIdRef.current + 1
     sendRequestIdRef.current = requestId
@@ -1346,13 +1336,7 @@ const Main: FC<IMainProps> = () => {
 
         if (message || messageId || newConversationId) { markRespondingConversationStarted(newConversationId || respondingConversationIdRef.current || undefined) }
 
-        if (!isAgentMode) {
-          responseItem.content = responseItem.content + message
-        }
-        else {
-          const lastThought = responseItem.agent_thoughts?.[responseItem.agent_thoughts?.length - 1]
-          if (lastThought) { lastThought.thought = lastThought.thought + message }
-        }
+        responseItem.content = responseItem.content + message
         if (messageId && !hasSetResponseId) {
           responseItem.id = messageId
           hasSetResponseId = true
@@ -1403,7 +1387,6 @@ const Main: FC<IMainProps> = () => {
 
         markRespondingConversationStarted(respondingConversationIdRef.current || undefined)
 
-        isAgentMode = true
         const response = responseItem as any
         if (thought.message_id && !hasSetResponseId) {
           response.id = thought.message_id
@@ -1415,8 +1398,8 @@ const Main: FC<IMainProps> = () => {
         else {
           const lastThought = response.agent_thoughts[response.agent_thoughts.length - 1]
           if (lastThought.id === thought.id) {
-            thought.thought = lastThought.thought
-            thought.message_files = lastThought.message_files
+            thought.thought = thought.thought || lastThought.thought
+            thought.message_files = lastThought.message_files || thought.message_files
             responseItem.agent_thoughts![response.agent_thoughts.length - 1] = thought
           }
           else {

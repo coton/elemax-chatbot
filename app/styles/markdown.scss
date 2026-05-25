@@ -106,6 +106,7 @@
   --markdown-table-border-subtle: var(--color-border-muted);
   --markdown-table-header-text: var(--color-fg-muted);
   --markdown-table-cell-text: var(--color-fg-default);
+  --markdown-hr-bg: #88898d;
 }
 
 .light {
@@ -119,6 +120,7 @@
   --markdown-table-border-subtle: var(--app-border);
   --markdown-table-header-text: var(--app-text-tertiary);
   --markdown-table-cell-text: var(--app-text-secondary);
+  --markdown-hr-bg: #f3f4f6;
 }
 
 .theme-dark .markdown-body {
@@ -128,6 +130,7 @@
   --markdown-table-border-subtle: rgba(255, 255, 255, 0.08);
   --markdown-table-header-text: var(--app-text-tertiary);
   --markdown-table-cell-text: var(--app-text-secondary);
+  --markdown-hr-bg: #88898d;
 }
 
 :root {
@@ -238,10 +241,10 @@
   overflow: hidden;
   background: transparent;
   border-bottom: 1px solid var(--color-border-muted);
-  height: 0.25em;
+  height: 1px;
   padding: 0;
   margin: 24px 0;
-  background-color: var(--color-border-default);
+  background-color: var(--markdown-hr-bg);
   border: 0;
 }
 
