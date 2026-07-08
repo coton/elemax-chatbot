@@ -43,8 +43,20 @@ assert.match(
 
 assert.match(
   chatComponent,
+  /MIN_MOBILE_KEYBOARD_INSET[\s\S]*document\.activeElement[\s\S]*inputSection\?\.contains\(activeElement\)[\s\S]*rawKeyboardInset < MIN_MOBILE_KEYBOARD_INSET[\s\S]*return 0/,
+  'chat input should ignore visual viewport toolbar movement unless the mobile chat input is focused and the inset looks like a keyboard',
+)
+
+assert.match(
+  chatComponent,
   /refreshMobileKeyboardInsetSoon[\s\S]*window\.requestAnimationFrame\(refreshMobileKeyboardInset\)[\s\S]*e\.key === 'Enter' \|\| e\.code === 'Enter'[\s\S]*handleSend/,
   'chat input should refresh the keyboard inset when users send with the mobile keyboard Enter key',
+)
+
+assert.match(
+  chatComponent,
+  /const keyboardInset = getMobileKeyboardInset\(\)[\s\S]*const viewportBottom = keyboardInset > 0 && visualViewport[\s\S]*: window\.innerHeight/,
+  'chat input visibility checks should only use the reduced visual viewport while a real keyboard inset is active',
 )
 
 assert.match(

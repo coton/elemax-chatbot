@@ -58,6 +58,8 @@ const StopCircleIcon = () => (
   </svg>
 )
 
+const MIN_MOBILE_KEYBOARD_INSET = 120
+
 export interface IChatProps {
   chatList: ChatItem[]
   /**
@@ -120,21 +122,41 @@ const Chat: FC<IChatProps> = ({
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
   const inputSectionRef = useRef<HTMLDivElement>(null)
-  const refreshMobileKeyboardInset = React.useCallback(() => {
+  const getMobileKeyboardInset = React.useCallback(() => {
     if (typeof window === 'undefined') {
-      return
+      return 0
+    }
+
+    if (!window.matchMedia('(max-width: 640px)').matches) {
+      return 0
+    }
+
+    const inputSection = inputSectionRef.current
+    const activeElement = document.activeElement
+    const isChatInputFocused = activeElement instanceof HTMLElement && inputSection?.contains(activeElement)
+    if (!isChatInputFocused) {
+      return 0
     }
 
     const visualViewport = window.visualViewport
-    const keyboardInset = visualViewport
+    const rawKeyboardInset = visualViewport
       ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
       : 0
+
+    if (rawKeyboardInset < MIN_MOBILE_KEYBOARD_INSET) {
+      return 0
+    }
+
+    return Math.min(rawKeyboardInset, Math.round(window.innerHeight * 0.6))
+  }, [])
+  const refreshMobileKeyboardInset = React.useCallback(() => {
+    const keyboardInset = getMobileKeyboardInset()
 
     document.documentElement.style.setProperty(
       '--mobile-keyboard-inset-bottom',
       `${Math.round(keyboardInset)}px`,
     )
-  }, [])
+  }, [getMobileKeyboardInset])
   const refreshMobileKeyboardInsetSoon = React.useCallback(() => {
     refreshMobileKeyboardInset()
 
@@ -166,8 +188,11 @@ const Chat: FC<IChatProps> = ({
       scrollContainer.scrollTop = scrollContainer.scrollHeight
     }
 
+    const keyboardInset = getMobileKeyboardInset()
     const visualViewport = window.visualViewport
-    const viewportBottom = visualViewport?.height ?? window.innerHeight
+    const viewportBottom = keyboardInset > 0 && visualViewport
+      ? visualViewport.height
+      : window.innerHeight
     const inputRect = inputSection.getBoundingClientRect()
     const bottomOverflow = inputRect.bottom - viewportBottom + 12
 
@@ -185,7 +210,7 @@ const Chat: FC<IChatProps> = ({
         inline: 'nearest',
       })
     }
-  }, [])
+  }, [getMobileKeyboardInset])
   const syncMobileInputPositionSoon = React.useCallback((options: { focusTextarea?: boolean, scrollToBottom?: boolean } = {}) => {
     refreshMobileKeyboardInsetSoon()
 
@@ -224,6 +249,10 @@ const Chat: FC<IChatProps> = ({
 
   const handleTextareaFocus = () => {
     syncMobileInputPositionSoon({ scrollToBottom: true })
+  }
+
+  const handleTextareaBlur = () => {
+    refreshMobileKeyboardInsetSoon()
   }
 
   useEffect(() => {
@@ -509,6 +538,7 @@ const Chat: FC<IChatProps> = ({
                 value={query}
                 onChange={handleContentChange}
                 onFocus={handleTextareaFocus}
+                onBlur={handleTextareaBlur}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
                 autoSize
