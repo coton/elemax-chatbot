@@ -55,7 +55,7 @@ const LocaleLayout = async ({
         <script dangerouslySetInnerHTML={{ __html: themeInitializer }} />
         <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-in">
           <div className="overflow-x-auto">
-            <div className="w-screen h-screen min-w-[300px]">
+            <div className="app-viewport w-screen min-w-[300px]">
               {children}
             </div>
           </div>

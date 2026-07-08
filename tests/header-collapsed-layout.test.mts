@@ -21,6 +21,12 @@ assert.match(
   'mobile auto-collapsed header should use the same compact conversation trail',
 )
 
+assert.match(
+  headerComponent,
+  /app-header sticky top-0 z-30/,
+  'mobile header should have a sticky top app-header class for safe-area styling',
+)
+
 assert.doesNotMatch(
   headerComponent,
   /Bars3Icon|PencilSquareIcon/,

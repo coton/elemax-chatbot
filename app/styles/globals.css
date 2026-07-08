@@ -29,6 +29,7 @@
   --app-destructive-hover: #fef3f2;
   --app-destructive-border: #fecdca;
   --app-panel-on-panel-item-bg: #ffffff;
+  --mobile-keyboard-inset-bottom: 0px;
 
   --foreground-rgb: 17, 24, 39;
   --background-start-rgb: 243, 244, 246;
@@ -109,6 +110,7 @@
 html,
 body {
   max-width: 100vw;
+  height: 100%;
   overflow-x: hidden;
 }
 
@@ -189,6 +191,12 @@ body {
 .app-sidebar {
   background-color: var(--app-outer-bg);
   color: var(--app-text);
+}
+
+.app-viewport,
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
 }
 
 .app-main-panel {
@@ -339,6 +347,16 @@ textarea::placeholder {
 }
 
 @media (max-width: 640px) {
+  .app-header {
+    height: calc(3.5rem + env(safe-area-inset-top));
+    min-height: calc(3.5rem + env(safe-area-inset-top));
+    padding-top: calc(0.5rem + env(safe-area-inset-top));
+  }
+
+  .chat-scroll-content {
+    padding-bottom: calc(180px + var(--mobile-keyboard-inset-bottom, 0px));
+  }
+
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   textarea:not([data-no-mobile-zoom]),
   select:not([data-no-mobile-zoom]) {
@@ -346,7 +364,7 @@ textarea::placeholder {
   }
 
   .chat-input-section {
-    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    bottom: calc(var(--mobile-keyboard-inset-bottom, 0px) + max(0.75rem, env(safe-area-inset-bottom)));
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }

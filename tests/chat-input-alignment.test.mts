@@ -36,6 +36,24 @@ assert.match(
 )
 
 assert.match(
+  chatComponent,
+  /visualViewport[\s\S]*--mobile-keyboard-inset-bottom[\s\S]*onFocus=\{handleTextareaFocus\}/,
+  'chat input should track the mobile visual viewport so it can stay above the soft keyboard',
+)
+
+assert.match(
+  chatComponent,
+  /refreshMobileKeyboardInsetSoon[\s\S]*window\.requestAnimationFrame\(refreshMobileKeyboardInset\)[\s\S]*e\.key === 'Enter' \|\| e\.code === 'Enter'[\s\S]*handleSend/,
+  'chat input should refresh the keyboard inset when users send with the mobile keyboard Enter key',
+)
+
+assert.match(
+  chatComponent,
+  /inputSectionRef[\s\S]*focus\(\{ preventScroll: true \}\)[\s\S]*scrollContainer\.scrollTop = scrollContainer\.scrollHeight[\s\S]*syncMobileInputPositionSoon\(\{ focusTextarea: true, scrollToBottom: true \}\)/,
+  'chat input should refocus and keep the mobile panel scrolled to the bottom after sending',
+)
+
+assert.match(
   globalStyles,
   /@media \(min-width: 641px\) and \(max-width: 768px\)[\s\S]*\.chat-input-section-sidebar[\s\S]*width:\s*calc\(100vw - 216px\)[\s\S]*margin-left:\s*108px/,
   'chat input section should use the available tablet content width when the sidebar is visible',
@@ -43,8 +61,14 @@ assert.match(
 
 assert.match(
   globalStyles,
-  /@media \(max-width: 640px\)[\s\S]*\.chat-input-section[\s\S]*env\(safe-area-inset-bottom\)[\s\S]*\.chat-input-textarea[\s\S]*padding-right:\s*96px/,
-  'chat input section should tighten spacing and respect safe-area on mobile screens',
+  /@media \(max-width: 640px\)[\s\S]*\.chat-scroll-content[\s\S]*var\(--mobile-keyboard-inset-bottom, 0px\)[\s\S]*\.chat-input-section[\s\S]*calc\(var\(--mobile-keyboard-inset-bottom, 0px\) \+ max\(0\.75rem, env\(safe-area-inset-bottom\)\)\)[\s\S]*\.chat-input-textarea[\s\S]*padding-right:\s*96px/,
+  'chat input section should tighten spacing and respect safe-area and keyboard insets on mobile screens',
+)
+
+assert.match(
+  globalStyles,
+  /@media \(max-width: 640px\)[\s\S]*\.app-header[\s\S]*env\(safe-area-inset-top\)/,
+  'mobile header should remain sticky while respecting top safe-area',
 )
 
 assert.match(
@@ -57,4 +81,10 @@ assert.match(
   rootLayout,
   /export const viewport[\s\S]*initialScale:\s*1[\s\S]*maximumScale:\s*1[\s\S]*viewportFit:\s*'cover'/,
   'root layout should lock the initial viewport scale for mobile keyboard focus',
+)
+
+assert.match(
+  rootLayout,
+  /app-viewport/,
+  'root layout should use a dynamic viewport shell instead of a fixed h-screen wrapper',
 )

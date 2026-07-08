@@ -119,12 +119,116 @@ const Chat: FC<IChatProps> = ({
 
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
+  const inputSectionRef = useRef<HTMLDivElement>(null)
+  const refreshMobileKeyboardInset = React.useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const visualViewport = window.visualViewport
+    const keyboardInset = visualViewport
+      ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
+      : 0
+
+    document.documentElement.style.setProperty(
+      '--mobile-keyboard-inset-bottom',
+      `${Math.round(keyboardInset)}px`,
+    )
+  }, [])
+  const refreshMobileKeyboardInsetSoon = React.useCallback(() => {
+    refreshMobileKeyboardInset()
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.requestAnimationFrame(refreshMobileKeyboardInset)
+    window.setTimeout(refreshMobileKeyboardInset, 80)
+    window.setTimeout(refreshMobileKeyboardInset, 250)
+  }, [refreshMobileKeyboardInset])
+  const ensureMobileInputVisible = React.useCallback((options: { focusTextarea?: boolean, scrollToBottom?: boolean } = {}) => {
+    if (typeof window === 'undefined' || !window.matchMedia('(max-width: 640px)').matches) {
+      return
+    }
+
+    const inputSection = inputSectionRef.current
+    if (!inputSection) {
+      return
+    }
+
+    const scrollContainer = inputSection.closest('.app-main-panel') as HTMLElement | null
+
+    if (options.focusTextarea) {
+      inputSection.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true })
+    }
+
+    if (options.scrollToBottom && scrollContainer) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight
+    }
+
+    const visualViewport = window.visualViewport
+    const viewportBottom = visualViewport?.height ?? window.innerHeight
+    const inputRect = inputSection.getBoundingClientRect()
+    const bottomOverflow = inputRect.bottom - viewportBottom + 12
+
+    if (bottomOverflow > 0) {
+      if (scrollContainer) {
+        scrollContainer.scrollTop += bottomOverflow
+      }
+      else {
+        window.scrollBy({ top: bottomOverflow, behavior: 'auto' })
+      }
+
+      inputSection.scrollIntoView({
+        behavior: 'auto',
+        block: 'end',
+        inline: 'nearest',
+      })
+    }
+  }, [])
+  const syncMobileInputPositionSoon = React.useCallback((options: { focusTextarea?: boolean, scrollToBottom?: boolean } = {}) => {
+    refreshMobileKeyboardInsetSoon()
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    ensureMobileInputVisible(options)
+    window.requestAnimationFrame(() => ensureMobileInputVisible(options))
+    window.setTimeout(() => ensureMobileInputVisible(options), 80)
+    window.setTimeout(() => ensureMobileInputVisible(options), 250)
+    window.setTimeout(() => ensureMobileInputVisible(options), 500)
+  }, [ensureMobileInputVisible, refreshMobileKeyboardInsetSoon])
 
   const handleContentChange = (e: any) => {
     const value = e.target.value
     setQuery(value)
     queryRef.current = value
   }
+
+  useEffect(() => {
+    refreshMobileKeyboardInset()
+
+    const visualViewport = window.visualViewport
+    visualViewport?.addEventListener('resize', refreshMobileKeyboardInset)
+    visualViewport?.addEventListener('scroll', refreshMobileKeyboardInset)
+    window.addEventListener('resize', refreshMobileKeyboardInset)
+
+    return () => {
+      visualViewport?.removeEventListener('resize', refreshMobileKeyboardInset)
+      visualViewport?.removeEventListener('scroll', refreshMobileKeyboardInset)
+      window.removeEventListener('resize', refreshMobileKeyboardInset)
+      document.documentElement.style.removeProperty('--mobile-keyboard-inset-bottom')
+    }
+  }, [refreshMobileKeyboardInset])
+
+  const handleTextareaFocus = () => {
+    syncMobileInputPositionSoon({ scrollToBottom: true })
+  }
+
+  useEffect(() => {
+    syncMobileInputPositionSoon({ scrollToBottom: true })
+  }, [chatList.length, syncMobileInputPositionSoon])
 
   const logError = (message: string) => {
     notify({ type: 'error', message, duration: 3000 })
@@ -178,6 +282,8 @@ const Chat: FC<IChatProps> = ({
   }, [fileConfig])
 
   const handleSend = () => {
+    syncMobileInputPositionSoon({ scrollToBottom: true })
+
     if (!valid() || (checkCanSend && !checkCanSend())) {
       return
     }
@@ -226,11 +332,15 @@ const Chat: FC<IChatProps> = ({
     ) {
       setAttachmentFiles([])
     }
+    syncMobileInputPositionSoon({ focusTextarea: true, scrollToBottom: true })
   }
 
   const handleKeyUp = (e: any) => {
-    if (e.code === 'Enter') {
+    const isEnter = e.key === 'Enter' || e.code === 'Enter'
+
+    if (isEnter) {
       e.preventDefault()
+      syncMobileInputPositionSoon({ scrollToBottom: true })
       // prevent send message when using input method enter
       if (!e.shiftKey && !isUseInputMethod.current) {
         handleSend()
@@ -240,7 +350,13 @@ const Chat: FC<IChatProps> = ({
 
   const handleKeyDown = (e: any) => {
     isUseInputMethod.current = e.nativeEvent.isComposing
-    if (e.code === 'Enter' && !e.shiftKey) {
+    const isEnter = e.key === 'Enter' || e.code === 'Enter'
+
+    if (isEnter) {
+      syncMobileInputPositionSoon({ scrollToBottom: true })
+    }
+
+    if (isEnter && !e.shiftKey) {
       const result = query.replace(/\n$/, '')
       setQuery(result)
       queryRef.current = result
@@ -344,6 +460,7 @@ const Chat: FC<IChatProps> = ({
       </div>
       {!isHideSendInput && (
         <div
+          ref={inputSectionRef}
           className={cn(
             'chat-input-section fixed z-10 bottom-4 left-1/2 max-w-full -translate-x-1/2 transform px-4 mobile:w-full tablet:w-[768px] pc:w-[768px]',
             !isSidebarCollapsed && 'chat-input-section-sidebar',
@@ -391,6 +508,7 @@ const Chat: FC<IChatProps> = ({
                 placeholder={t('app.chat.inputPlaceholder')}
                 value={query}
                 onChange={handleContentChange}
+                onFocus={handleTextareaFocus}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
                 autoSize

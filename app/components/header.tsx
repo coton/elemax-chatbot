@@ -80,7 +80,7 @@ const Header: FC<IHeaderProps> = ({
   const currentConversationTitle = conversationName || title
 
   return (
-    <div className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between bg-[var(--app-panel-bg)] px-3 py-2">
+    <div className="app-header sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between bg-[var(--app-panel-bg)] px-3 py-2">
       <div className='flex min-w-0 items-center gap-3'>
         {isMobile && (
           <button

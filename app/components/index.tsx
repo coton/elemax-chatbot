@@ -342,15 +342,21 @@ const Main: FC<IMainProps> = () => {
   const chatListDomRef = useRef<HTMLDivElement>(null)
   const mainPanelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    // scroll to bottom with page-level scrolling
-    if (chatListDomRef.current) {
-      setTimeout(() => {
-        chatListDomRef.current?.scrollIntoView({
-          behavior: 'auto',
-          block: 'end',
-        })
-      }, 50)
+    // Scroll the app panel directly so mobile keyboard viewport changes do not
+    // leave the newest message or input just below the visible area.
+    const mainPanel = mainPanelRef.current
+    if (!mainPanel) {
+      return
     }
+
+    const scrollTimer = window.setTimeout(() => {
+      mainPanel.scrollTo({
+        top: mainPanel.scrollHeight,
+        behavior: 'auto',
+      })
+    }, 50)
+
+    return () => window.clearTimeout(scrollTimer)
   }, [chatList, currConversationId])
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
@@ -1555,7 +1561,7 @@ const Main: FC<IMainProps> = () => {
   ].join(' ')
 
   return (
-    <div className={`app-shell theme-${effectiveTheme} flex h-screen flex-col`}>
+    <div className={`app-shell theme-${effectiveTheme} flex h-full flex-col`}>
       <div className="flex min-h-0 flex-1">
         {/* sidebar */}
         {!isMobile && (
@@ -1574,10 +1580,12 @@ const Main: FC<IMainProps> = () => {
           </div>
         )}
         {/* main */}
-        <div className='relative min-w-0 grow p-2'>
+        <div className={isMobile ? 'relative min-w-0 grow p-0' : 'relative min-w-0 grow p-2'}>
           <div
             ref={mainPanelRef}
-            className='app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-2xl border-0 shadow-none'
+            className={isMobile
+              ? 'app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-none border-0 shadow-none'
+              : 'app-main-panel flex h-full min-w-0 flex-col overflow-y-auto rounded-2xl border-0 shadow-none'}
           >
             <Header
               title={APP_INFO.title}
@@ -1602,7 +1610,7 @@ const Main: FC<IMainProps> = () => {
 
             {
               hasSetInputs && (
-                <div className='relative mx-auto mb-3.5 w-full max-w-[768px] grow pb-[180px]' ref={chatListDomRef}>
+                <div className='chat-scroll-content relative mx-auto mb-3.5 w-full max-w-[768px] grow pb-[180px]' ref={chatListDomRef}>
                   {isConversationLoading
                     ? (
                       <div className='flex min-h-[240px] h-full items-center justify-center'>
