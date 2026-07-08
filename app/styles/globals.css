@@ -339,6 +339,12 @@ textarea::placeholder {
 }
 
 @media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea:not([data-no-mobile-zoom]),
+  select:not([data-no-mobile-zoom]) {
+    font-size: 16px;
+  }
+
   .chat-input-section {
     bottom: max(0.75rem, env(safe-area-inset-bottom));
     padding-left: 0.75rem;

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 
 const chatComponent = readFileSync('app/components/chat/index.tsx', 'utf8')
 const globalStyles = readFileSync('app/styles/globals.css', 'utf8')
+const rootLayout = readFileSync('app/layout.tsx', 'utf8')
 
 assert.match(
   chatComponent,
@@ -44,4 +45,16 @@ assert.match(
   globalStyles,
   /@media \(max-width: 640px\)[\s\S]*\.chat-input-section[\s\S]*env\(safe-area-inset-bottom\)[\s\S]*\.chat-input-textarea[\s\S]*padding-right:\s*96px/,
   'chat input section should tighten spacing and respect safe-area on mobile screens',
+)
+
+assert.match(
+  globalStyles,
+  /@media \(max-width: 640px\)[\s\S]*input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\):not\(\[type="file"\]\),[\s\S]*textarea:not\(\[data-no-mobile-zoom\]\),[\s\S]*select:not\(\[data-no-mobile-zoom\]\)[\s\S]*font-size:\s*16px/,
+  'mobile form controls should keep a 16px computed font size to prevent iOS focus zoom',
+)
+
+assert.match(
+  rootLayout,
+  /export const viewport[\s\S]*initialScale:\s*1[\s\S]*maximumScale:\s*1[\s\S]*viewportFit:\s*'cover'/,
+  'root layout should lock the initial viewport scale for mobile keyboard focus',
 )

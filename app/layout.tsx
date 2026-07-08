@@ -1,5 +1,5 @@
 import { ClerkProvider } from '@clerk/nextjs'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { getLocaleOnServer } from '@/i18n/server'
 
 import './styles/globals.css'
@@ -34,6 +34,13 @@ export const metadata: Metadata = {
     icon: '/favicon.ico?v=elemax',
     shortcut: '/favicon.ico?v=elemax',
   },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 }
 
 const LocaleLayout = async ({
