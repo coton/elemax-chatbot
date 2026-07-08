@@ -122,41 +122,84 @@ const Chat: FC<IChatProps> = ({
   const [query, setQuery] = React.useState('')
   const queryRef = useRef('')
   const inputSectionRef = useRef<HTMLDivElement>(null)
-  const getMobileKeyboardInset = React.useCallback(() => {
+  const shouldKeepEmptyConversationFirstMessageAtTopRef = useRef(false)
+  const getMobileScrollContainer = React.useCallback(() => {
+    if (typeof window === 'undefined' || !window.matchMedia('(max-width: 640px)').matches) {
+      return null
+    }
+
+    return inputSectionRef.current?.closest('.app-main-panel') as HTMLElement | null
+  }, [])
+  const getMobileViewportMetrics = React.useCallback(() => {
     if (typeof window === 'undefined') {
-      return 0
+      return { keyboardInset: 0, viewportOffsetTop: 0 }
     }
 
     if (!window.matchMedia('(max-width: 640px)').matches) {
-      return 0
+      return { keyboardInset: 0, viewportOffsetTop: 0 }
     }
 
     const inputSection = inputSectionRef.current
     const activeElement = document.activeElement
     const isChatInputFocused = activeElement instanceof HTMLElement && inputSection?.contains(activeElement)
     if (!isChatInputFocused) {
-      return 0
+      return { keyboardInset: 0, viewportOffsetTop: 0 }
     }
 
     const visualViewport = window.visualViewport
+    const viewportOffsetTop = visualViewport
+      ? Math.max(0, visualViewport.offsetTop)
+      : 0
     const rawKeyboardInset = visualViewport
-      ? Math.max(0, window.innerHeight - visualViewport.height - visualViewport.offsetTop)
+      ? Math.max(0, window.innerHeight - visualViewport.height - viewportOffsetTop)
       : 0
 
     if (rawKeyboardInset < MIN_MOBILE_KEYBOARD_INSET) {
+      return { keyboardInset: 0, viewportOffsetTop: 0 }
+    }
+
+    return {
+      keyboardInset: Math.min(rawKeyboardInset, Math.round(window.innerHeight * 0.6)),
+      viewportOffsetTop,
+    }
+  }, [])
+  const getMobileKeyboardInset = React.useCallback(() => {
+    return getMobileViewportMetrics().keyboardInset
+  }, [getMobileViewportMetrics])
+  const getMobileConversationTopScroll = React.useCallback((scrollContainer: HTMLElement) => {
+    const chatScrollContent = scrollContainer.querySelector<HTMLElement>('.chat-scroll-content')
+    const header = scrollContainer.querySelector<HTMLElement>('.app-header')
+    if (!chatScrollContent) {
       return 0
     }
 
-    return Math.min(rawKeyboardInset, Math.round(window.innerHeight * 0.6))
+    const viewportOffsetTop = Number.parseFloat(
+      document.documentElement.style.getPropertyValue('--mobile-viewport-offset-top'),
+    ) || 0
+    return Math.max(0, chatScrollContent.offsetTop - (header?.offsetHeight ?? 0) - viewportOffsetTop)
+  }, [])
+  const resetOuterScroll = React.useCallback(() => {
+    // iOS may scroll outer containers (html/body/wrapper) when the virtual
+    // keyboard appears. Force them back to 0 so the sticky header stays
+    // pinned and the page doesn't shift.
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
   }, [])
   const refreshMobileKeyboardInset = React.useCallback(() => {
-    const keyboardInset = getMobileKeyboardInset()
+    const { keyboardInset, viewportOffsetTop } = getMobileViewportMetrics()
 
     document.documentElement.style.setProperty(
       '--mobile-keyboard-inset-bottom',
       `${Math.round(keyboardInset)}px`,
     )
-  }, [getMobileKeyboardInset])
+    document.documentElement.style.setProperty(
+      '--mobile-viewport-offset-top',
+      `${Math.round(viewportOffsetTop)}px`,
+    )
+
+    resetOuterScroll()
+  }, [getMobileViewportMetrics, resetOuterScroll])
   const refreshMobileKeyboardInsetSoon = React.useCallback(() => {
     refreshMobileKeyboardInset()
 
@@ -178,7 +221,7 @@ const Chat: FC<IChatProps> = ({
       return
     }
 
-    const scrollContainer = inputSection.closest('.app-main-panel') as HTMLElement | null
+    const scrollContainer = getMobileScrollContainer()
 
     if (options.focusTextarea) {
       inputSection.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true })
@@ -196,21 +239,10 @@ const Chat: FC<IChatProps> = ({
     const inputRect = inputSection.getBoundingClientRect()
     const bottomOverflow = inputRect.bottom - viewportBottom + 12
 
-    if (bottomOverflow > 0) {
-      if (scrollContainer) {
-        scrollContainer.scrollTop += bottomOverflow
-      }
-      else {
-        window.scrollBy({ top: bottomOverflow, behavior: 'auto' })
-      }
-
-      inputSection.scrollIntoView({
-        behavior: 'auto',
-        block: 'end',
-        inline: 'nearest',
-      })
+    if (bottomOverflow > 0 && scrollContainer) {
+      scrollContainer.scrollBy({ top: bottomOverflow, behavior: 'auto' })
     }
-  }, [getMobileKeyboardInset])
+  }, [getMobileKeyboardInset, getMobileScrollContainer])
   const syncMobileInputPositionSoon = React.useCallback((options: { focusTextarea?: boolean, scrollToBottom?: boolean } = {}) => {
     refreshMobileKeyboardInsetSoon()
 
@@ -224,6 +256,25 @@ const Chat: FC<IChatProps> = ({
     window.setTimeout(() => ensureMobileInputVisible(options), 250)
     window.setTimeout(() => ensureMobileInputVisible(options), 500)
   }, [ensureMobileInputVisible, refreshMobileKeyboardInsetSoon])
+  const scrollMobileConversationToTop = React.useCallback(() => {
+    const scrollContainer = getMobileScrollContainer()
+    if (!scrollContainer) {
+      return
+    }
+
+    scrollContainer.scrollTop = getMobileConversationTopScroll(scrollContainer)
+  }, [getMobileConversationTopScroll, getMobileScrollContainer])
+  const scrollMobileConversationToTopSoon = React.useCallback(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    scrollMobileConversationToTop()
+    window.requestAnimationFrame(scrollMobileConversationToTop)
+    window.setTimeout(scrollMobileConversationToTop, 80)
+    window.setTimeout(scrollMobileConversationToTop, 250)
+    window.setTimeout(scrollMobileConversationToTop, 550)
+  }, [scrollMobileConversationToTop])
 
   const handleContentChange = (e: any) => {
     const value = e.target.value
@@ -244,6 +295,7 @@ const Chat: FC<IChatProps> = ({
       visualViewport?.removeEventListener('scroll', refreshMobileKeyboardInset)
       window.removeEventListener('resize', refreshMobileKeyboardInset)
       document.documentElement.style.removeProperty('--mobile-keyboard-inset-bottom')
+      document.documentElement.style.removeProperty('--mobile-viewport-offset-top')
     }
   }, [refreshMobileKeyboardInset])
 
@@ -256,8 +308,14 @@ const Chat: FC<IChatProps> = ({
   }
 
   useEffect(() => {
+    if (shouldKeepEmptyConversationFirstMessageAtTopRef.current && chatList.length > 0) {
+      shouldKeepEmptyConversationFirstMessageAtTopRef.current = false
+      scrollMobileConversationToTopSoon()
+      return
+    }
+
     syncMobileInputPositionSoon({ scrollToBottom: true })
-  }, [chatList.length, syncMobileInputPositionSoon])
+  }, [chatList.length, scrollMobileConversationToTopSoon, syncMobileInputPositionSoon])
 
   const logError = (message: string) => {
     notify({ type: 'error', message, duration: 3000 })
@@ -311,7 +369,8 @@ const Chat: FC<IChatProps> = ({
   }, [fileConfig])
 
   const handleSend = () => {
-    syncMobileInputPositionSoon({ scrollToBottom: true })
+    const isEmptyConversationFirstMessage = chatList.length === 0
+    syncMobileInputPositionSoon({ scrollToBottom: !isEmptyConversationFirstMessage })
 
     if (!valid() || (checkCanSend && !checkCanSend())) {
       return
@@ -340,6 +399,7 @@ const Chat: FC<IChatProps> = ({
     if (!isSendAccepted) {
       return
     }
+    shouldKeepEmptyConversationFirstMessageAtTopRef.current = isEmptyConversationFirstMessage
     if (
       !files.find(
         item => item.type === TransferMethod.local_file && !item.fileId,
@@ -351,6 +411,10 @@ const Chat: FC<IChatProps> = ({
       if (!isResponding) {
         setQuery('')
         queryRef.current = ''
+        // Immediately refocus so the mobile keyboard stays open.
+        // React's state update may momentarily blur the textarea;
+        // re-focusing synchronously prevents the keyboard dismiss.
+        inputSectionRef.current?.querySelector<HTMLTextAreaElement>('textarea')?.focus()
       }
     }
     if (
@@ -361,7 +425,10 @@ const Chat: FC<IChatProps> = ({
     ) {
       setAttachmentFiles([])
     }
-    syncMobileInputPositionSoon({ focusTextarea: true, scrollToBottom: true })
+    syncMobileInputPositionSoon({ focusTextarea: true, scrollToBottom: !isEmptyConversationFirstMessage })
+    if (isEmptyConversationFirstMessage) {
+      scrollMobileConversationToTopSoon()
+    }
   }
 
   const handleKeyUp = (e: any) => {
@@ -369,7 +436,6 @@ const Chat: FC<IChatProps> = ({
 
     if (isEnter) {
       e.preventDefault()
-      syncMobileInputPositionSoon({ scrollToBottom: true })
       // prevent send message when using input method enter
       if (!e.shiftKey && !isUseInputMethod.current) {
         handleSend()
@@ -380,10 +446,6 @@ const Chat: FC<IChatProps> = ({
   const handleKeyDown = (e: any) => {
     isUseInputMethod.current = e.nativeEvent.isComposing
     const isEnter = e.key === 'Enter' || e.code === 'Enter'
-
-    if (isEnter) {
-      syncMobileInputPositionSoon({ scrollToBottom: true })
-    }
 
     if (isEnter && !e.shiftKey) {
       const result = query.replace(/\n$/, '')
@@ -565,6 +627,7 @@ const Chat: FC<IChatProps> = ({
                   type="button"
                   className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
                   style={{ backgroundColor: 'rgb(28, 100, 242)' }}
+                  onMouseDown={e => e.preventDefault()}
                   onClick={handleSend}
                 >
                   <SendIcon />

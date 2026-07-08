@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
+const mainComponent = readFileSync('app/components/index.tsx', 'utf8')
 const chatComponent = readFileSync('app/components/chat/index.tsx', 'utf8')
 const globalStyles = readFileSync('app/styles/globals.css', 'utf8')
 const rootLayout = readFileSync('app/layout.tsx', 'utf8')
@@ -37,8 +38,8 @@ assert.match(
 
 assert.match(
   chatComponent,
-  /visualViewport[\s\S]*--mobile-keyboard-inset-bottom[\s\S]*onFocus=\{handleTextareaFocus\}/,
-  'chat input should track the mobile visual viewport so it can stay above the soft keyboard',
+  /visualViewport[\s\S]*--mobile-keyboard-inset-bottom[\s\S]*--mobile-viewport-offset-top[\s\S]*onFocus=\{handleTextareaFocus\}/,
+  'chat input should track the mobile visual viewport so it can stay above the soft keyboard without hiding the header',
 )
 
 assert.match(
@@ -61,8 +62,32 @@ assert.match(
 
 assert.match(
   chatComponent,
-  /inputSectionRef[\s\S]*focus\(\{ preventScroll: true \}\)[\s\S]*scrollContainer\.scrollTop = scrollContainer\.scrollHeight[\s\S]*syncMobileInputPositionSoon\(\{ focusTextarea: true, scrollToBottom: true \}\)/,
-  'chat input should refocus and keep the mobile panel scrolled to the bottom after sending',
+  /inputSectionRef[\s\S]*focus\(\{ preventScroll: true \}\)[\s\S]*scrollContainer\.scrollTop = scrollContainer\.scrollHeight[\s\S]*syncMobileInputPositionSoon\(\{ focusTextarea: true, scrollToBottom: !isEmptyConversationFirstMessage \}\)/,
+  'chat input should refocus after sending and only keep the mobile panel at the bottom for non-empty conversations',
+)
+
+assert.match(
+  chatComponent,
+  /const isEmptyConversationFirstMessage = chatList\.length === 0[\s\S]*scrollToBottom: !isEmptyConversationFirstMessage[\s\S]*shouldKeepEmptyConversationFirstMessageAtTopRef\.current = isEmptyConversationFirstMessage[\s\S]*scrollMobileConversationToTopSoon\(\)/,
+  'empty mobile conversations should not queue bottom scrolling after the first message is sent',
+)
+
+assert.match(
+  mainComponent,
+  /pendingMobileFirstMessageTopScrollRef[\s\S]*holdMobileFirstMessageTopPositionRef[\s\S]*getMobileConversationTopScroll[\s\S]*mainPanel\.scrollTop = getMobileConversationTopScroll\(mainPanel\)[\s\S]*shouldHoldMobileFirstMessageTopPosition[\s\S]*mainPanel\.scrollTo\(\{[\s\S]*top:\s*mainPanel\.scrollHeight/,
+  'main panel auto-scroll should hold the top position for mobile empty-conversation first messages',
+)
+
+assert.doesNotMatch(
+  chatComponent,
+  /scrollIntoView\(/,
+  'mobile keyboard positioning should not call scrollIntoView on the fixed chat input',
+)
+
+assert.match(
+  mainComponent,
+  /const shouldKeepMobileFirstMessageAtTop = isMobile && currentChatList\.length === 0[\s\S]*pendingMobileFirstMessageTopScrollRef\.current = true[\s\S]*holdMobileFirstMessageTopPositionRef\.current = true/,
+  'sending the first message in an empty mobile conversation should arm the top-scroll guard',
 )
 
 assert.match(
@@ -79,8 +104,8 @@ assert.match(
 
 assert.match(
   globalStyles,
-  /@media \(max-width: 640px\)[\s\S]*\.app-header[\s\S]*env\(safe-area-inset-top\)/,
-  'mobile header should remain sticky while respecting top safe-area',
+  /@media \(max-width: 640px\)[\s\S]*\.app-header[\s\S]*--mobile-viewport-offset-top[\s\S]*env\(safe-area-inset-top\)/,
+  'mobile header should remain sticky while respecting visual viewport offset and top safe-area',
 )
 
 assert.match(

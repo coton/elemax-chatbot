@@ -308,6 +308,7 @@ const Main: FC<IMainProps> = () => {
   }, [currConversationId, inited])
 
   const handleConversationIdChange = async (id: string) => {
+    resetMobileFirstMessageTopPosition()
     const idChangeRequestId = conversationIdChangeRequestIdRef.current + 1
     conversationIdChangeRequestIdRef.current = idChangeRequestId
     const isCurrentIdChange = () => conversationIdChangeRequestIdRef.current === idChangeRequestId
@@ -341,6 +342,19 @@ const Main: FC<IMainProps> = () => {
   const [chatList, setChatList, getChatList] = useGetState<ChatItem[]>([])
   const chatListDomRef = useRef<HTMLDivElement>(null)
   const mainPanelRef = useRef<HTMLDivElement>(null)
+  const pendingMobileFirstMessageTopScrollRef = useRef(false)
+  const holdMobileFirstMessageTopPositionRef = useRef(false)
+  const resetMobileFirstMessageTopPosition = () => {
+    pendingMobileFirstMessageTopScrollRef.current = false
+    holdMobileFirstMessageTopPositionRef.current = false
+  }
+  const getMobileConversationTopScroll = React.useCallback((mainPanel: HTMLElement) => {
+    const header = mainPanel.querySelector<HTMLElement>('.app-header')
+    const viewportOffsetTop = Number.parseFloat(
+      document.documentElement.style.getPropertyValue('--mobile-viewport-offset-top'),
+    ) || 0
+    return Math.max(0, (chatListDomRef.current?.offsetTop ?? 0) - (header?.offsetHeight ?? 0) - viewportOffsetTop)
+  }, [])
   useEffect(() => {
     // Scroll the app panel directly so mobile keyboard viewport changes do not
     // leave the newest message or input just below the visible area.
@@ -349,7 +363,20 @@ const Main: FC<IMainProps> = () => {
       return
     }
 
+    const shouldScrollFirstMobileMessageToTop = pendingMobileFirstMessageTopScrollRef.current
+    if (shouldScrollFirstMobileMessageToTop) { pendingMobileFirstMessageTopScrollRef.current = false }
+    const shouldHoldMobileFirstMessageTopPosition = isMobile && holdMobileFirstMessageTopPositionRef.current && chatList.length > 0
+
     const scrollTimer = window.setTimeout(() => {
+      if (shouldScrollFirstMobileMessageToTop) {
+        mainPanel.scrollTop = getMobileConversationTopScroll(mainPanel)
+        return
+      }
+
+      if (shouldHoldMobileFirstMessageTopPosition) {
+        return
+      }
+
       mainPanel.scrollTo({
         top: mainPanel.scrollHeight,
         behavior: 'auto',
@@ -357,7 +384,7 @@ const Main: FC<IMainProps> = () => {
     }, 50)
 
     return () => window.clearTimeout(scrollTimer)
-  }, [chatList, currConversationId])
+  }, [chatList, currConversationId, getMobileConversationTopScroll, isMobile])
   // user can not edit inputs if user had send message
   const canEditInputs = !chatList.some(item => item.isAnswer === false) && isNewConversation
   const createNewChat = (forceReset = false, options: StartNewConversationOptions = {}) => {
@@ -414,6 +441,7 @@ const Main: FC<IMainProps> = () => {
     promptVariables = promptConfig?.prompt_variables || [],
     showInHistory = true,
   }: StartNewConversationOptions = {}) => {
+    resetMobileFirstMessageTopPosition()
     setNewConversationInputs(inputs)
     if (showInHistory) {
       createNewChat(forceReset, {
@@ -635,6 +663,7 @@ const Main: FC<IMainProps> = () => {
     const isDeletingLastConversation = nextConversationList.length === 0
     const nextConversationId = nextConversationList[0]?.id || '-1'
 
+    if (isDeletingCurrentConversation) { resetMobileFirstMessageTopPosition() }
     setConversationList(nextConversationList)
 
     if (isDeletingCurrentConversation) {
@@ -925,6 +954,14 @@ const Main: FC<IMainProps> = () => {
         : item,
     )
     const newList = [...currentChatList, questionItem, placeholderAnswerItem]
+    const shouldKeepMobileFirstMessageAtTop = isMobile && currentChatList.length === 0
+    if (shouldKeepMobileFirstMessageAtTop) {
+      pendingMobileFirstMessageTopScrollRef.current = true
+      holdMobileFirstMessageTopPositionRef.current = true
+    }
+    else {
+      resetMobileFirstMessageTopPosition()
+    }
     setChatList(newList)
 
     // answer

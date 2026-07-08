@@ -30,6 +30,7 @@
   --app-destructive-border: #fecdca;
   --app-panel-on-panel-item-bg: #ffffff;
   --mobile-keyboard-inset-bottom: 0px;
+  --mobile-viewport-offset-top: 0px;
 
   --foreground-rgb: 17, 24, 39;
   --background-start-rgb: 243, 244, 246;
@@ -111,7 +112,7 @@ html,
 body {
   max-width: 100vw;
   height: 100%;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 html {
@@ -348,6 +349,7 @@ textarea::placeholder {
 
 @media (max-width: 640px) {
   .app-header {
+    top: var(--mobile-viewport-offset-top, 0px);
     height: calc(3.5rem + env(safe-area-inset-top));
     min-height: calc(3.5rem + env(safe-area-inset-top));
     padding-top: calc(0.5rem + env(safe-area-inset-top));
