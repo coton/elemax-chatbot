@@ -222,6 +222,22 @@ body {
   border-color: var(--app-border);
 }
 
+.brand-image-light {
+  display: block;
+}
+
+.brand-image-dark {
+  display: none;
+}
+
+.theme-dark .brand-image-light {
+  display: none;
+}
+
+.theme-dark .brand-image-dark {
+  display: block;
+}
+
 .auth-provider-button:hover {
   background-color: var(--dark-surface-hover);
 }

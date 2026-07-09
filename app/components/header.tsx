@@ -1,6 +1,7 @@
 import type { FC } from 'react'
 import React from 'react'
 import { Show } from '@clerk/nextjs'
+import BrandImage from '@/app/components/brand/brand-image'
 import CustomUserMenu from '@/app/components/header/custom-user-menu'
 
 const ExpandSidebarIcon = () => (
@@ -27,11 +28,7 @@ const ConversationTrail: FC<{
   <div className="flex min-w-0 items-center gap-0.5 transition-all duration-200 ease-in-out">
     <div className="shrink-0">
       <span className="relative flex h-8 w-8 grow-0 shrink-0 items-center justify-center overflow-hidden rounded-lg text-[20px]">
-        <img
-          className="h-full w-full object-contain"
-          alt="app icon"
-          src="/elemax-logo-170x170px.png"
-        />
+        <BrandImage type="avatar" alt="MaxAI" className="h-full w-full object-contain" />
       </span>
     </div>
     <div className="shrink-0 px-1 text-divider-deep">/</div>

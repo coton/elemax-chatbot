@@ -1,7 +1,12 @@
 .answerIcon {
   position: relative;
-  background: #eef4ff url(/bot.png) center center / contain no-repeat;
+  background: #eef4ff url(/brand/maxai-avatar-light.png) center center / contain no-repeat;
   border-radius: 50%;
+}
+
+:global(.theme-dark) .answerIcon {
+  background-color: transparent;
+  background-image: url(/brand/maxai-avatar-dark.png);
 }
 
 .typeingIcon {

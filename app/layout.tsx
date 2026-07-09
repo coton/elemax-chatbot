@@ -31,8 +31,8 @@ const themeInitializer = `
 export const metadata: Metadata = {
   title: 'Max AI',
   icons: {
-    icon: '/favicon.ico?v=elemax',
-    shortcut: '/favicon.ico?v=elemax',
+    icon: '/brand/maxai-avatar-dark.png',
+    shortcut: '/brand/maxai-avatar-dark.png',
   },
 }
 

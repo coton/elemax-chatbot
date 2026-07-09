@@ -7,6 +7,7 @@ import type { FC } from 'react'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import BrandImage from '@/app/components/brand/brand-image'
 // import Card from './card'
 import type { ConversationItem } from '@/types/app'
 
@@ -141,11 +142,7 @@ const AboutDialog = ({
         </button>
         <div className="flex flex-col items-center gap-4 px-4 pb-8 pt-10">
           <span className="relative flex h-14 w-14 grow-0 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-[0.5px] border-divider-regular text-[32px]">
-            <img
-              className="h-full w-full object-contain"
-              alt="app icon"
-              src="/elemax-logo-170x170px.png"
-            />
+            <BrandImage type="avatar" alt="MaxAI" className="h-full w-full object-contain" />
           </span>
           <div id="about-dialog-title" className="max-w-[340px] text-center text-[17px] font-semibold leading-6 text-text-secondary">
             MaxAI is a smart AI consultant for the building engineering services industry.
@@ -206,12 +203,8 @@ const Sidebar: FC<ISidebarProps> = ({
       className="app-sidebar flex w-full grow flex-col rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
     >
       <div className="flex shrink-0 items-center gap-3 p-3 pr-2">
-        <img
-          src="/elemax-logo-170x170px.png"
-          alt=""
-          className="h-8 w-8 shrink-0 rounded-lg object-contain"
-        />
-        <div className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-700">{title}</div>
+        <BrandImage type="logo" alt={title} className="h-8 w-auto max-w-[118px] shrink-0 object-contain" />
+        <div className="min-w-0 flex-1" />
         {onToggleCollapse && (
           <button
             type="button"
@@ -297,7 +290,7 @@ const Sidebar: FC<ISidebarProps> = ({
         </button>
         <div className="flex items-center gap-2 text-[10px] font-normal text-gray-500">
           <span>POWERED BY</span>
-          <img src="/logo-32x32.png" alt="Powered by logo" className="h-5 w-5" />
+          <BrandImage type="logo" alt="Powered by MaxAI" className="h-3 w-auto max-w-12 object-contain" />
         </div>
       </div>
       {aboutOpen && (

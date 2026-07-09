@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useClerk } from '@clerk/nextjs'
+import BrandImage from '@/app/components/brand/brand-image'
 
 const GoogleIcon = () => {
   return (
@@ -65,11 +66,9 @@ const GoogleOnlySignIn = () => {
   return (
     <section className="auth-card w-full max-w-[420px] rounded-lg border px-6 py-8 shadow-sm">
       <div className="text-center">
-        <img
-          src="/elemax-logo-170x170px.png"
-          alt="Elemax"
-          className="mx-auto mb-5 h-14 w-14 object-contain"
-        />
+        <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full">
+          <BrandImage type="avatar" alt="MaxAI" className="h-full w-full object-contain" />
+        </span>
         <h1 className="text-xl font-bold leading-7 tracking-normal">
           Sign in to use Max AI
         </h1>
