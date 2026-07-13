@@ -143,6 +143,7 @@ const Main: FC<IMainProps> = () => {
     isNewConversation,
     currConversationInfo,
     currInputs,
+    newConversationInfo,
     newConversationInputs,
     setNewConversationInputs,
     resetNewConversationInputs,
@@ -166,6 +167,10 @@ const Main: FC<IMainProps> = () => {
   const conversationName = currConversationInfo?.name || t('app.chat.newChatDefaultName') as string
   const conversationIntroduction = currConversationInfo?.introduction || ''
   const suggestedQuestions = currConversationInfo?.suggested_questions || []
+  const latestConversationIntroduction = newConversationInfo?.introduction || ''
+  const latestSuggestedQuestions = newConversationInfo?.suggested_questions || []
+  const currentConversation = conversationList.find(item => item.id === currConversationId)
+  const isCurrentConversationStale = !isNewConversation && currentConversation?.is_stale_config === true
 
   const syncConversationHistory = async ({
     autoGenerateNameForId,
@@ -436,8 +441,8 @@ const Main: FC<IMainProps> = () => {
   const startNewConversation = ({
     forceReset = false,
     inputs = getDefaultPromptInputs(promptConfig?.prompt_variables || []),
-    introduction = conversationIntroduction,
-    suggestedQuestions: nextSuggestedQuestions = suggestedQuestions,
+    introduction = latestConversationIntroduction,
+    suggestedQuestions: nextSuggestedQuestions = latestSuggestedQuestions,
     promptVariables = promptConfig?.prompt_variables || [],
     showInHistory = true,
   }: StartNewConversationOptions = {}) => {
@@ -712,6 +717,8 @@ const Main: FC<IMainProps> = () => {
   }
 
   const checkCanSend = () => {
+    if (isCurrentConversationStale) { return false }
+
     if (currConversationId !== '-1') { return true }
 
     if (!currInputs || !promptConfig?.prompt_variables) { return true }
@@ -894,6 +901,8 @@ const Main: FC<IMainProps> = () => {
   }
 
   const handleSend = (message: string, files?: VisionFile[], options?: { answerHistory?: ChatItem[], baseChatList?: ChatItem[] }) => {
+    if (isCurrentConversationStale) { return false }
+
     if (isSendLocked) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return false
@@ -1289,6 +1298,8 @@ const Main: FC<IMainProps> = () => {
   }
 
   const handleRetry = (answer: ChatItem, overrideQuestionContent?: string, baseChatList?: ChatItem[]) => {
+    if (isCurrentConversationStale) { return }
+
     if (isSendLocked) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return
@@ -1670,6 +1681,8 @@ const Main: FC<IMainProps> = () => {
                         visionConfig={visionConfig}
                         fileConfig={fileConfig}
                         isSidebarCollapsed={isSidebarCollapsed}
+                        isConversationStale={isCurrentConversationStale}
+                        onStartLatestConversation={() => handleConversationIdChange('-1')}
                       />
                     )}
                 </div>)
