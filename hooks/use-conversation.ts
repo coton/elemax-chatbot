@@ -62,6 +62,7 @@ function useConversation() {
     clearConversationIdFromStorage,
     isNewConversation,
     currInputs,
+    newConversationInfo,
     newConversationInputs,
     existConversationInputs,
     setNewConversationInputs,

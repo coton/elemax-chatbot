@@ -5,6 +5,7 @@ import cn from 'classnames'
 import { useTranslation } from 'react-i18next'
 import Textarea from 'rc-textarea'
 import { useUser } from '@clerk/nextjs'
+import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import Answer from './answer'
 import Question from './question'
 import type { FeedbackFunc } from './type'
@@ -85,6 +86,8 @@ export interface IChatProps {
   fileConfig?: FileUpload
   isSidebarCollapsed?: boolean
   isSendLocked?: boolean
+  isConversationStale?: boolean
+  onStartLatestConversation?: () => void
 }
 
 const Chat: FC<IChatProps> = ({
@@ -106,6 +109,8 @@ const Chat: FC<IChatProps> = ({
   fileConfig,
   isSidebarCollapsed = false,
   isSendLocked = false,
+  isConversationStale = false,
+  onStartLatestConversation,
 }) => {
   const { t } = useTranslation()
   const { user } = useUser()
@@ -558,83 +563,104 @@ const Chat: FC<IChatProps> = ({
             isSidebarCollapsed && 'chat-input-section-collapsed',
           )}
         >
-          {isResponding && (
-            <div className="mb-2 flex justify-center">
-              <button
-                type="button"
-                className="btn disabled:btn-disabled btn-secondary btn-medium border-components-panel-border bg-components-panel-bg text-components-button-secondary-text"
-                disabled={hasStopResponded}
-                onClick={onStopResponding}
-              >
-                <StopCircleIcon />
-                <span className="text-xs font-normal">Stop responding</span>
-              </button>
-            </div>
-          )}
-          {renderSuggestedQuestions()}
-          <div className="chat-input-panel relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
-            <div className="chat-input-scroll relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">
-              {visionConfig?.enabled && files.length > 0 && (
-                <div className="mb-1">
-                  <ImageList
-                    list={files}
-                    onRemove={onRemove}
-                    onReUpload={onReUpload}
-                    onImageLinkLoadSuccess={onImageLinkLoadSuccess}
-                    onImageLinkLoadError={onImageLinkLoadError}
-                  />
-                </div>
-              )}
-              {attachmentFileConfig?.enabled && (
-                <div className="mb-1">
-                  <FileUploaderInAttachmentWrapper
-                    fileConfig={attachmentFileConfig}
-                    value={attachmentFiles}
-                    onChange={setAttachmentFiles}
-                  />
-                </div>
-              )}
-              <Textarea
-                className="chat-input-textarea block w-full max-h-none min-h-8 resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-8 text-gray-900 outline-none placeholder:text-gray-400"
-                placeholder={t('app.chat.inputPlaceholder')}
-                value={query}
-                onChange={handleContentChange}
-                onFocus={handleTextareaFocus}
-                onBlur={handleTextareaBlur}
-                onKeyUp={handleKeyUp}
-                onKeyDown={handleKeyDown}
-                autoSize
-              />
-            </div>
-            <div className="chat-input-actions absolute right-[9px] top-1/2 flex h-8 -translate-y-1/2 items-center gap-1.5">
-              {visionConfig?.enabled && (
-                <ChatImageUploader
-                  settings={visionConfig}
-                  onUpload={onUpload}
-                  disabled={files.length >= visionConfig.number_limits}
-                />
-              )}
-              <Tooltip
-                selector="send-tip"
-                htmlContent={
-                  <div>
-                    <div>{t('common.operation.send')} Enter</div>
-                    <div>{t('common.operation.lineBreak')} Shift Enter</div>
-                  </div>
-                }
-              >
+          {isConversationStale
+            ? (
+              <div className="rounded-xl border border-state-accent-border bg-components-panel-bg px-4 py-3 shadow-md backdrop-blur-sm">
+                <div className="text-sm font-semibold text-text-primary">Max AI has been updated</div>
+                <p className="mt-1 text-sm leading-5 text-text-tertiary">
+                  Start a new chat to use the latest version.
+                </p>
                 <button
                   type="button"
-                  className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
-                  style={{ backgroundColor: 'rgb(28, 100, 242)' }}
-                  onMouseDown={e => e.preventDefault()}
-                  onClick={handleSend}
+                  className="btn btn-primary mt-3 h-9 w-full justify-center px-4 text-sm font-medium"
+                  onClick={onStartLatestConversation}
                 >
-                  <SendIcon />
+                  <ArrowPathIcon className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Start a new chat with the latest version
                 </button>
-              </Tooltip>
-            </div>
-          </div>
+              </div>
+            )
+            : (
+              <>
+                {isResponding && (
+                  <div className="mb-2 flex justify-center">
+                    <button
+                      type="button"
+                      className="btn disabled:btn-disabled btn-secondary btn-medium border-components-panel-border bg-components-panel-bg text-components-button-secondary-text"
+                      disabled={hasStopResponded}
+                      onClick={onStopResponding}
+                    >
+                      <StopCircleIcon />
+                      <span className="text-xs font-normal">Stop responding</span>
+                    </button>
+                  </div>
+                )}
+                {renderSuggestedQuestions()}
+                <div className="chat-input-panel relative z-10 overflow-hidden rounded-xl border border-[#d0d5dd] bg-white/95 shadow-md backdrop-blur-sm">
+                  <div className="chat-input-scroll relative max-h-[158px] overflow-x-hidden overflow-y-auto p-[9px]">
+                    {visionConfig?.enabled && files.length > 0 && (
+                      <div className="mb-1">
+                        <ImageList
+                          list={files}
+                          onRemove={onRemove}
+                          onReUpload={onReUpload}
+                          onImageLinkLoadSuccess={onImageLinkLoadSuccess}
+                          onImageLinkLoadError={onImageLinkLoadError}
+                        />
+                      </div>
+                    )}
+                    {attachmentFileConfig?.enabled && (
+                      <div className="mb-1">
+                        <FileUploaderInAttachmentWrapper
+                          fileConfig={attachmentFileConfig}
+                          value={attachmentFiles}
+                          onChange={setAttachmentFiles}
+                        />
+                      </div>
+                    )}
+                    <Textarea
+                      className="chat-input-textarea block w-full max-h-none min-h-8 resize-none appearance-none bg-transparent px-1 py-0 pr-[112px] text-base leading-8 text-gray-900 outline-none placeholder:text-gray-400"
+                      placeholder={t('app.chat.inputPlaceholder')}
+                      value={query}
+                      onChange={handleContentChange}
+                      onFocus={handleTextareaFocus}
+                      onBlur={handleTextareaBlur}
+                      onKeyUp={handleKeyUp}
+                      onKeyDown={handleKeyDown}
+                      autoSize
+                    />
+                  </div>
+                  <div className="chat-input-actions absolute right-[9px] top-1/2 flex h-8 -translate-y-1/2 items-center gap-1.5">
+                    {visionConfig?.enabled && (
+                      <ChatImageUploader
+                        settings={visionConfig}
+                        onUpload={onUpload}
+                        disabled={files.length >= visionConfig.number_limits}
+                      />
+                    )}
+                    <Tooltip
+                      selector="send-tip"
+                      htmlContent={
+                        <div>
+                          <div>{t('common.operation.send')} Enter</div>
+                          <div>{t('common.operation.lineBreak')} Shift Enter</div>
+                        </div>
+                      }
+                    >
+                      <button
+                        type="button"
+                        className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
+                        style={{ backgroundColor: 'rgb(28, 100, 242)' }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={handleSend}
+                      >
+                        <SendIcon />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              </>
+            )}
         </div>
       )}
     </div>
