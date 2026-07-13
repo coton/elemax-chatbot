@@ -31,6 +31,6 @@ assert.match(
 
 assert.match(
   chatComponent,
-  /Max AI has been updated[\s\S]*Start a new chat to use the latest knowledge base and instructions\.[\s\S]*Start a new chat with the latest version/,
+  /Max AI has been updated[\s\S]*Start a new chat to use the latest version\.[\s\S]*Start a new chat with the latest version/,
   'stale conversations should replace the input with a clear update notice and action',
 )
