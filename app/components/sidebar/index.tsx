@@ -15,7 +15,6 @@ function classNames(...classes: any[]) {
   return classes.filter(Boolean).join(' ')
 }
 
-const MAX_CONVERSATION_LENTH = 20
 export type ThemePreference = 'system' | 'light' | 'dark'
 
 const CollapseSidebarIcon = () => (
@@ -217,16 +216,14 @@ const Sidebar: FC<ISidebarProps> = ({
           </button>
         )}
       </div>
-      {list.length < MAX_CONVERSATION_LENTH && (
-        <div className="shrink-0 px-3 py-4">
-          <Button
-            onClick={() => { onCurrentIdChange('-1') }}
-            className="new-chat-button group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[0.5px] !border-state-accent-border !bg-state-accent-hover !px-[14px] !py-0 text-text-accent items-center !text-sm !font-medium hover:!bg-[#eef0f3]"
-          >
-            <NewChatIcon /> Start New chat
-          </Button>
-        </div>
-      )}
+      <div className="shrink-0 px-3 py-4">
+        <Button
+          onClick={() => { onCurrentIdChange('-1') }}
+          className="new-chat-button group block w-full flex-shrink-0 !justify-center !h-9 !rounded-lg !border-[0.5px] !border-state-accent-border !bg-state-accent-hover !px-[14px] !py-0 text-text-accent items-center !text-sm !font-medium hover:!bg-[#eef0f3]"
+        >
+          <NewChatIcon /> Start New chat
+        </Button>
+      </div>
 
       <nav className="h-0 flex-1 space-y-0.5 overflow-y-auto px-3 pt-4">
         {list.map((item) => {
