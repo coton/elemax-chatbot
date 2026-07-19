@@ -48,9 +48,11 @@ const EMBEDDED_BROWSER_PATTERN = [
   /\bwv\b/i,
 ]
 
-const isLikelyEmbeddedBrowser = () => {
+type EmbeddedBrowserPlatform = 'android' | 'ios' | 'other'
+
+const getEmbeddedBrowserPlatform = (): EmbeddedBrowserPlatform | null => {
   if (typeof navigator === 'undefined') {
-    return false
+    return null
   }
 
   const ua = navigator.userAgent || ''
@@ -60,18 +62,45 @@ const isLikelyEmbeddedBrowser = () => {
     && /Mobile/i.test(ua)
     && !/Safari|CriOS|FxiOS|EdgiOS/i.test(ua)
 
-  return isKnownEmbeddedBrowser || isIOSWebView
+  if (!isKnownEmbeddedBrowser && !isIOSWebView) {
+    return null
+  }
+
+  if (/Android/i.test(ua)) {
+    return 'android'
+  }
+
+  if (/iP(hone|ad|od)/i.test(ua)) {
+    return 'ios'
+  }
+
+  return 'other'
+}
+
+const buildAndroidBrowserIntent = (targetUrl: string) => {
+  const url = new URL(targetUrl)
+  const scheme = url.protocol.replace(':', '')
+  const fallbackUrl = encodeURIComponent(targetUrl)
+
+  return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=${scheme};action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=${fallbackUrl};end`
 }
 
 const GoogleOnlySignIn = () => {
   const clerk = useClerk()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isEmbeddedBrowser, setIsEmbeddedBrowser] = useState(false)
+  const [embeddedBrowserPlatform, setEmbeddedBrowserPlatform] = useState<EmbeddedBrowserPlatform | null>(null)
+  const [androidBrowserIntent, setAndroidBrowserIntent] = useState('')
   const [copyStatus, setCopyStatus] = useState('')
   const [error, setError] = useState('')
+  const isEmbeddedBrowser = embeddedBrowserPlatform !== null
 
   useEffect(() => {
-    setIsEmbeddedBrowser(isLikelyEmbeddedBrowser())
+    const platform = getEmbeddedBrowserPlatform()
+    setEmbeddedBrowserPlatform(platform)
+
+    if (platform === 'android') {
+      setAndroidBrowserIntent(buildAndroidBrowserIntent(window.location.origin))
+    }
   }, [])
 
   const copyCurrentUrl = async () => {
@@ -142,11 +171,21 @@ const GoogleOnlySignIn = () => {
               Open in Safari or Chrome to sign in with Google.
             </p>
             <p className="mt-1">
-              Google blocks OAuth sign-in inside some in-app browsers. Use the top-right menu to open this page in your system browser, or copy the link below.
+              {embeddedBrowserPlatform === 'android'
+                ? 'Google blocks OAuth sign-in inside some in-app browsers. Open this page in your system browser to continue.'
+                : 'Google blocks OAuth sign-in inside some in-app browsers. Use the top-right menu to open this page in your system browser, or copy the link below.'}
             </p>
+            {embeddedBrowserPlatform === 'android' && androidBrowserIntent && (
+              <a
+                href={androidBrowserIntent}
+                className="mt-3 inline-flex rounded-md border border-red-500/50 px-3 py-2 text-xs font-semibold transition hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400"
+              >
+                Open in browser
+              </a>
+            )}
             <button
               type="button"
-              className="mt-3 rounded-md border border-red-500/50 px-3 py-2 text-xs font-semibold transition hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400"
+              className={`${embeddedBrowserPlatform === 'android' ? 'ml-2' : ''} mt-3 rounded-md border border-red-500/50 px-3 py-2 text-xs font-semibold transition hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400`}
               onClick={copyCurrentUrl}
             >
               Copy app link
