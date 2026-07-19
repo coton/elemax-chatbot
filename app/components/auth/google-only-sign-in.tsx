@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useClerk } from '@clerk/nextjs'
 import BrandImage from '@/app/components/brand/brand-image'
 
@@ -31,13 +31,71 @@ const GoogleIcon = () => {
   )
 }
 
+const EMBEDDED_BROWSER_PATTERN = [
+  /MicroMessenger/i,
+  /WeChat/i,
+  /DingTalk/i,
+  /Lark/i,
+  /Feishu/i,
+  /FBAN/i,
+  /FBAV/i,
+  /Instagram/i,
+  /Line\//i,
+  /Weibo/i,
+  /QQ\//i,
+  /TikTok/i,
+  /Bytedance/i,
+  /\bwv\b/i,
+]
+
+const isLikelyEmbeddedBrowser = () => {
+  if (typeof navigator === 'undefined') {
+    return false
+  }
+
+  const ua = navigator.userAgent || ''
+  const isKnownEmbeddedBrowser = EMBEDDED_BROWSER_PATTERN.some(pattern => pattern.test(ua))
+  const isIOSWebView = /iP(hone|ad|od)/i.test(ua)
+    && /AppleWebKit/i.test(ua)
+    && /Mobile/i.test(ua)
+    && !/Safari|CriOS|FxiOS|EdgiOS/i.test(ua)
+
+  return isKnownEmbeddedBrowser || isIOSWebView
+}
+
 const GoogleOnlySignIn = () => {
   const clerk = useClerk()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isEmbeddedBrowser, setIsEmbeddedBrowser] = useState(false)
+  const [copyStatus, setCopyStatus] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    setIsEmbeddedBrowser(isLikelyEmbeddedBrowser())
+  }, [])
+
+  const copyCurrentUrl = async () => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(window.location.origin)
+      setCopyStatus('Link copied. Open it in Safari or Chrome.')
+    }
+    catch (error) {
+      console.error('[auth] unable to copy app link', error)
+      setCopyStatus(window.location.origin)
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     if (isSubmitting) {
+      return
+    }
+
+    if (isEmbeddedBrowser) {
+      setError('Google sign in is not supported in this in-app browser. Open this page in Safari or Chrome.')
       return
     }
 
@@ -78,10 +136,33 @@ const GoogleOnlySignIn = () => {
       </div>
 
       <div className="mt-8">
+        {isEmbeddedBrowser && (
+          <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm leading-5 text-red-600">
+            <p className="font-semibold">
+              Open in Safari or Chrome to sign in with Google.
+            </p>
+            <p className="mt-1">
+              Google blocks OAuth sign-in inside some in-app browsers. Use the top-right menu to open this page in your system browser, or copy the link below.
+            </p>
+            <button
+              type="button"
+              className="mt-3 rounded-md border border-red-500/50 px-3 py-2 text-xs font-semibold transition hover:bg-red-500/10 focus:outline-none focus:ring-2 focus:ring-red-400"
+              onClick={copyCurrentUrl}
+            >
+              Copy app link
+            </button>
+            {copyStatus && (
+              <p className="mt-2 break-all text-xs">
+                {copyStatus}
+              </p>
+            )}
+          </div>
+        )}
+
         <button
           type="button"
           className="auth-provider-button flex h-11 w-full items-center justify-center gap-3 rounded-lg border px-4 text-sm font-medium leading-none tracking-normal shadow-sm transition focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isEmbeddedBrowser}
           onClick={handleGoogleSignIn}
         >
           <GoogleIcon />
