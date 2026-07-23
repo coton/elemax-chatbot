@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { client, getInfo, handleRouteError } from '@/app/api/utils/common'
 import { DIFY_CONFIG_UPDATED_AT } from '@/config/server'
 
-const configUpdatedAt = Date.parse(DIFY_CONFIG_UPDATED_AT)
+const configUpdatedAt = Date.parse(DIFY_CONFIG_UPDATED_AT.trim())
 
 const markStaleConversations = (payload: any) => {
   if (!Number.isFinite(configUpdatedAt) || !Array.isArray(payload?.data)) { return payload }
