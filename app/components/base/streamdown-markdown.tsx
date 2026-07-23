@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import RemarkBreaks from 'remark-breaks'
 import { Streamdown } from 'streamdown'
 import 'katex/dist/katex.min.css'
+import MarkdownResourceLink from './markdown-resource-link'
 
 interface StreamdownMarkdownProps {
   content: string
@@ -77,7 +78,12 @@ export function StreamdownMarkdown({ content, className = '' }: StreamdownMarkdo
 
   return (
     <div className={`markdown-body streamdown-markdown ${className}`.trim()}>
-      <Streamdown remarkPlugins={[RemarkBreaks]}>{processedContent}</Streamdown>
+      <Streamdown
+        components={{ a: MarkdownResourceLink }}
+        remarkPlugins={[RemarkBreaks]}
+      >
+        {processedContent}
+      </Streamdown>
     </div>
   )
 }
