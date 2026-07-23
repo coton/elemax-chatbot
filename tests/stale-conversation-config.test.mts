@@ -7,6 +7,12 @@ const chatComponent = readFileSync('app/components/chat/index.tsx', 'utf8')
 
 assert.match(
   conversationsRoute,
+  /Date\.parse\(DIFY_CONFIG_UPDATED_AT\.trim\(\)\)/,
+  'the configured Dify update time should ignore whitespace added by environment variable tooling',
+)
+
+assert.match(
+  conversationsRoute,
   /conversation\.created_at \* 1000 < configUpdatedAt/,
   'conversations created before the configured Dify update time should be marked stale',
 )
