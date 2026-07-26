@@ -18,7 +18,7 @@ assert.match(
 
 assert.match(
   streamdownMarkdown,
-  /preprocessLaTeX\(content\)/,
+  /preprocessLaTeX\([\s\S]*hasBrandResources[\s\S]*content\.replaceAll\('厂商产品资料', '品牌产品资料'\)[\s\S]*: content/,
   'message Markdown should normalize common LLM LaTeX delimiters before rendering',
 )
 

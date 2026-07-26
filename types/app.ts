@@ -117,6 +117,10 @@ export interface ConversationItem {
   created_at?: number
   updated_at?: number
   is_stale_config?: boolean
+  source?: 'active' | 'archive'
+  archive_app_id?: string
+  archive_label?: string
+  is_read_only?: boolean
 }
 
 export interface AppInfo {

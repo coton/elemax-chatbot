@@ -2,10 +2,10 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { ChatClient } from 'dify-client'
-import { APP_ID } from '@/config'
-import { DIFY_API_URL, DIFY_APP_KEY } from '@/config/server'
+import { DIFY_API_URL, DIFY_APP_KEY, DIFY_ARCHIVED_APPS } from '@/config/server'
 
-const userPrefix = `user_${APP_ID}:`
+export const buildDifyUser = (clerkUserId: string) => `clerk:${clerkUserId}`
+export const buildLegacyDifyUser = (appId: string, clerkUserId: string) => `user_${appId}:${clerkUserId}`
 
 export class UnauthorizedError extends Error {
   status = 401
@@ -21,7 +21,7 @@ export const getInfo = async (_request?: NextRequest) => {
     throw new UnauthorizedError()
   }
 
-  const user = userPrefix + userId
+  const user = buildDifyUser(userId)
   return {
     userId,
     user,
@@ -36,3 +36,9 @@ export const handleRouteError = (error: any) => {
 }
 
 export const client = new ChatClient(DIFY_APP_KEY, DIFY_API_URL)
+
+const archivedClients = new Map(
+  DIFY_ARCHIVED_APPS.map(app => [app.appId, new ChatClient(app.appKey, app.apiUrl)]),
+)
+
+export const getArchivedClient = (appId: string) => archivedClients.get(appId)

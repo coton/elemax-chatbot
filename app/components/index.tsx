@@ -170,6 +170,7 @@ const Main: FC<IMainProps> = () => {
   const latestConversationIntroduction = newConversationInfo?.introduction || ''
   const latestSuggestedQuestions = newConversationInfo?.suggested_questions || []
   const currentConversation = conversationList.find(item => item.id === currConversationId)
+  const isCurrentConversationArchived = currentConversation?.source === 'archive'
   const isCurrentConversationStale = !isNewConversation && currentConversation?.is_stale_config === true
 
   const syncConversationHistory = async ({
@@ -243,7 +244,11 @@ const Main: FC<IMainProps> = () => {
 
     if (!isNewConversation && !conversationIdChangeBecauseOfNew && !isResponding && !shouldSkipChatFetch) {
       setIsConversationLoading(true)
-      fetchChatList(currConversationId, { signal: chatListAbortSignal, limit: 100 }).then((res: any) => {
+      fetchChatList(currConversationId, {
+        signal: chatListAbortSignal,
+        limit: 100,
+        archiveAppId: currentConversation?.archive_app_id,
+      }).then((res: any) => {
         if (!isCurrentSwitch()) { return }
 
         const { data } = res
@@ -263,12 +268,13 @@ const Main: FC<IMainProps> = () => {
             content: item.answer,
             agent_thoughts: addFileInfos(item.agent_thoughts ? sortAgentSorts(item.agent_thoughts) : item.agent_thoughts, item.message_files),
             feedback: item.feedback,
+            feedbackDisabled: isCurrentConversationArchived,
             isAnswer: true,
             message_files: item.message_files?.filter((file: any) => file.belongs_to === 'assistant') || [],
           }
           newChatList.push(answerItem)
         })
-        const lastAnswerMessageId = getLastAnswerMessageId(newChatList)
+        const lastAnswerMessageId = isCurrentConversationArchived ? '' : getLastAnswerMessageId(newChatList)
         if (lastAnswerMessageId) {
           const lastAnswer = newChatList.find(item => item.id === lastAnswerMessageId)
           if (lastAnswer) { lastAnswer.suggestedQuestionsLoading = true }
@@ -651,6 +657,7 @@ const Main: FC<IMainProps> = () => {
 
   const handleDeleteConversation = async (id: string) => {
     if (id === '-1') { return }
+    const conversationToDelete = conversationList.find(item => item.id === id)
 
     if (id === currConversationId && isResponding) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
@@ -686,7 +693,7 @@ const Main: FC<IMainProps> = () => {
     }
 
     try {
-      await deleteConversationRequest(id)
+      await deleteConversationRequest(id, conversationToDelete?.archive_app_id)
 
       notify({ type: 'success', message: t('app.chat.deleteConversationSuccess') })
     }
@@ -1604,7 +1611,7 @@ const Main: FC<IMainProps> = () => {
   if (!APP_ID || !APP_INFO || !promptConfig) { return <Loading type='app' /> }
 
   const desktopSidebarClassName = [
-    'flex shrink-0 flex-col overflow-hidden transition-[width,opacity] duration-200 ease-in-out',
+    'flex h-full min-h-0 shrink-0 flex-col overflow-hidden transition-[width,opacity] duration-200 ease-in-out',
     isSidebarCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-[236px] opacity-100',
   ].join(' ')
 
@@ -1682,6 +1689,7 @@ const Main: FC<IMainProps> = () => {
                         fileConfig={fileConfig}
                         isSidebarCollapsed={isSidebarCollapsed}
                         isConversationStale={isCurrentConversationStale}
+                        isArchivedConversation={isCurrentConversationArchived}
                         onStartLatestConversation={() => handleConversationIdChange('-1')}
                       />
                     )}

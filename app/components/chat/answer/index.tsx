@@ -6,7 +6,6 @@ import type { Emoji } from '@/types/tools'
 import React from 'react'
 import { createPortal } from 'react-dom'
 import copy from 'copy-to-clipboard'
-import WorkflowProcess from '@/app/components/workflow/workflow-process'
 import Toast from '@/app/components/base/toast'
 import ImageGallery from '../../base/image-gallery'
 import LoadingAnim from '../loading-anim'
@@ -69,7 +68,7 @@ const Answer: FC<IAnswerProps> = ({
   allToolIcons,
 }) => {
   const activeItem = getActiveAnswerVariant(item) as ChatItem
-  const { id, content, feedback, agent_thoughts, workflowProcess } = activeItem
+  const { id, content, feedback, agent_thoughts } = activeItem
   const isAgentMode = !!agent_thoughts && agent_thoughts.length > 0
   const isStreaming = !!isResponding || !!activeItem.isRetrying
   const variantCount = getAnswerVariantCount(item)
@@ -186,10 +185,7 @@ const Answer: FC<IAnswerProps> = ({
         </div>
         <div className={`${s.answerWrap} chat-answer-container group ml-4 w-0 grow pb-4`}>
           <div className={`${s.answer} relative text-sm text-text-secondary`}>
-            <div className={`assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-text-secondary ${workflowProcess ? 'w-full' : ''}`}>
-              {workflowProcess && (
-                <WorkflowProcess data={workflowProcess} hideInfo />
-              )}
+            <div className="assistant-message-bubble relative inline-block max-w-full rounded-2xl bg-[#f9fafb] px-4 py-3 text-text-secondary">
               {(isStreaming && (isAgentMode ? (!content && (agent_thoughts || []).filter(item => !!item.thought || !!item.tool).length === 0) : !content))
                 ? (
                   <div className="flex items-center justify-center w-6 h-5">

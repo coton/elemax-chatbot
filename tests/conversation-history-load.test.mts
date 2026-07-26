@@ -8,13 +8,13 @@ const mainComponent = readFileSync('app/components/index.tsx', 'utf8')
 
 assert.match(
   service,
-  /params:\s*\{ conversation_id: conversationId, limit: options\?\.limit \|\| 100, first_id: options\?\.firstId \|\| '' \}/,
+  /conversation_id: conversationId,[\s\S]*limit: options\?\.limit \|\| 100,[\s\S]*first_id: options\?\.firstId \|\| '',[\s\S]*archive_app_id: options\.archiveAppId/,
   'chat history fetch should use Dify messages first_id pagination and load up to 100 records',
 )
 
 assert.match(
   messagesRoute,
-  /client\.getConversationMessages\(user, conversationId as string, firstId, Number\.isFinite\(limit\) \? limit : null\)/,
+  /selectedClient\.getConversationMessages\(user, conversationId as string, firstId, Number\.isFinite\(limit\) \? limit : null\)/,
   'messages route should forward first_id and limit to the Dify SDK',
 )
 
@@ -32,6 +32,6 @@ assert.match(
 
 assert.match(
   mainComponent,
-  /historyMessages = Array\.isArray\(data\) \? \[\.\.\.data\]\.reverse\(\) : \[\][\s\S]*historyMessages\.forEach/,
-  'Dify reverse-order history should be rendered in normal chronological chat order',
+  /historyMessages = Array\.isArray\(data\) \? \[\.\.\.data\] : \[\][\s\S]*historyMessages\.forEach/,
+  'Dify history should be copied before it is rendered in API order',
 )

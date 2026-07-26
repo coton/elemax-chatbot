@@ -199,7 +199,7 @@ const Sidebar: FC<ISidebarProps> = ({
 
   return (
     <div
-      className="app-sidebar flex w-full grow flex-col rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
+      className="app-sidebar flex h-full min-h-0 w-full flex-col overflow-hidden rounded-none border-0 shadow-none pc:w-[236px] tablet:w-[216px] mobile:w-[calc(100vw_-_40px)]"
     >
       <div className="flex shrink-0 items-center gap-3 p-3 pr-2">
         <BrandImage type="logo" alt={title} className="h-8 w-auto max-w-[118px] shrink-0 object-contain" />
@@ -225,13 +225,13 @@ const Sidebar: FC<ISidebarProps> = ({
         </Button>
       </div>
 
-      <nav className="h-0 flex-1 space-y-0.5 overflow-y-auto px-3 pt-4">
+      <nav className="conversation-list-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-scroll py-4 pl-3 pr-1">
         {list.map((item) => {
           const isCurrent = item.id === currentId
           return (
             <div
+              key={`${item.source || 'active'}:${item.id}`}
               onClick={() => onCurrentIdChange(item.id)}
-              key={item.id}
               className={classNames(
                 isCurrent
                   ? 'bg-[#eaf2ff] text-primary-600 hover:bg-[#eaf2ff]'
@@ -239,8 +239,13 @@ const Sidebar: FC<ISidebarProps> = ({
                 'group flex items-center rounded-lg p-1 pl-3 text-sm font-medium cursor-pointer',
               )}
             >
-              <div className="flex min-w-0 flex-1 items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="truncate py-1">{item.name}</span>
+                {item.source === 'archive' && (
+                  <span className="shrink-0 rounded bg-state-base-hover px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary">
+                    Legacy
+                  </span>
+                )}
               </div>
               <button
                 type="button"

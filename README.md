@@ -4,18 +4,26 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 ## Config App
 Create a file named `.env.local` in the current directory and copy the contents from `.env.example`. Setting the following content:
 ```
-# APP ID: This is the unique identifier for your app. You can find it in the app's detail page URL. 
-# For example, in the URL `https://cloud.dify.ai/app/xxx/workflow`, the value `xxx` is your APP ID.
-NEXT_PUBLIC_APP_ID=
+# Active Chatflow APP ID: Max AI v2 - PDF Tool Test.
+# The App ID is the value in the Dify URL `/app/<APP_ID>/workflow`.
+NEXT_PUBLIC_APP_ID=61b66232-960e-40e2-a2b6-fa67906d28da
 
 # Dify Backend Service API key.
 # Use DIFY_* instead of NEXT_PUBLIC_* because Dify API keys are secrets.
 # In Next.js, every NEXT_PUBLIC_* variable is bundled into frontend JavaScript
 # and can be read from the browser. Keep the app key server-side only.
+# Create this key in the new Chatflow's API Access page. Do not reuse the
+# legacy Chatbot key because Dify keys are application-scoped.
 DIFY_APP_KEY=
 
 # APP URL: This is the API's base URL. If you're using the Dify cloud service, set it to: https://api.dify.ai/v1.
 DIFY_API_URL=
+
+# Optional previous Dify App shown as read-only history.
+DIFY_ARCHIVE_1_APP_ID=
+DIFY_ARCHIVE_1_APP_KEY=
+DIFY_ARCHIVE_1_API_URL=
+DIFY_ARCHIVE_1_LABEL=Max AI v1
 
 # Clerk auth.
 # Use pk_live_... and sk_live_... on the main/production deployment.
@@ -107,12 +115,42 @@ Node.js Version: 20.x
 NEXT_PUBLIC_APP_ID=
 DIFY_APP_KEY=
 DIFY_API_URL=https://api.dify.ai/v1
+DIFY_ARCHIVE_1_APP_ID=
+DIFY_ARCHIVE_1_APP_KEY=
+DIFY_ARCHIVE_1_API_URL=https://api.dify.ai/v1
+DIFY_ARCHIVE_1_LABEL=Max AI v1
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 CLERK_SECRET_KEY=sk_live_...
 ```
 
 `DIFY_APP_KEY` is the Dify Backend Service API key shown in Dify's **Backend Service API -> API Key** dialog. It is intentionally server-only and must not use a `NEXT_PUBLIC_` prefix.
+
+### Migrating from the legacy Chatbot to Chatflow
+
+The active Max AI Chatflow is `61b66232-960e-40e2-a2b6-fa67906d28da`. In each real environment file (`.env.local`, `.env.production`, and Vercel Preview/Production), retain the previous Chatbot values as comments rather than deleting them, then set the active keys as follows:
+
+```dotenv
+# Legacy Chatbot configuration exposed as read-only history
+DIFY_ARCHIVE_1_APP_ID=<previous-chatbot-app-id>
+DIFY_ARCHIVE_1_APP_KEY=<previous-chatbot-backend-service-key>
+DIFY_ARCHIVE_1_API_URL=<previous-api-url>
+DIFY_ARCHIVE_1_LABEL=Max AI v1
+
+# Active Max AI v2 Chatflow
+NEXT_PUBLIC_APP_ID=61b66232-960e-40e2-a2b6-fa67906d28da
+DIFY_APP_KEY=<new-chatflow-backend-service-api-key>
+DIFY_API_URL=https://ai.elemaxai.com/v1
+```
+
+Active and future Dify Apps use the stable identifier `clerk:<Clerk userId>`.
+The legacy Chatbot archive retains its historical
+`user_<APP_ID>:<Clerk userId>` identifier for history access. Archived
+conversations can be deleted, but cannot be rated, retried, or continued. Add
+`DIFY_ARCHIVE_2_*` through `DIFY_ARCHIVE_5_*` for future application
+replacements.
+
+`DIFY_CONFIG_UPDATED_AT` must be changed only when the Chatflow is published. Use Asia/Shanghai time with an explicit `+08:00` offset, then redeploy the relevant Vercel environment.
 
 After the project is connected, Vercel will automatically create preview deployments for pull requests and production deployments for pushes to the production branch configured in Vercel.
 

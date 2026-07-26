@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import RemarkBreaks from 'remark-breaks'
 import { Streamdown } from 'streamdown'
 import 'katex/dist/katex.min.css'
-import MarkdownResourceLink from './markdown-resource-link'
+import MarkdownResourceLink, { isTrustedPdfResource } from './markdown-resource-link'
 
 interface StreamdownMarkdownProps {
   content: string
@@ -13,6 +13,7 @@ interface StreamdownMarkdownProps {
 const codeBlockRegex = /```[\s\S]*?```/g
 const dollarPlaceholder = '_STREAMDOWN_MARKDOWN_DOLLAR_'
 const tableDelimiterCellRegex = /^:?-{3,}:?$/
+const markdownLinkUrlRegex = /\]\((https?:\/\/[^)\s]+)\)/g
 
 const escapeReplacement = (value: string) =>
   value.replace(/\$/g, dollarPlaceholder)
@@ -74,7 +75,19 @@ const preprocessLaTeX = (content: string) => {
 }
 
 export function StreamdownMarkdown({ content, className = '' }: StreamdownMarkdownProps) {
-  const processedContent = useMemo(() => preprocessLaTeX(content), [content])
+  const hasBrandResources = useMemo(
+    () => [...content.matchAll(markdownLinkUrlRegex)].some(match => isTrustedPdfResource(match[1])),
+    [content],
+  )
+  const hasProcurementContact = content.includes('procurement@elemax.com')
+  const processedContent = useMemo(
+    () => preprocessLaTeX(
+      hasBrandResources
+        ? content.replaceAll('厂商产品资料', '品牌产品资料')
+        : content,
+    ),
+    [content, hasBrandResources],
+  )
 
   return (
     <div className={`markdown-body streamdown-markdown ${className}`.trim()}>
@@ -84,6 +97,19 @@ export function StreamdownMarkdown({ content, className = '' }: StreamdownMarkdo
       >
         {processedContent}
       </Streamdown>
+      {hasBrandResources && !hasProcurementContact && (
+        <p className="mt-4 border-t border-divider-subtle pt-3 text-sm leading-6 text-text-secondary">
+          需要具体型号的参数表、GB 证书复印件或正式报价？请联系
+          {' '}
+          <a
+            href="mailto:procurement@elemax.com"
+            className="font-medium text-text-accent no-underline hover:underline"
+          >
+            procurement@elemax.com
+          </a>
+          ，ELEMAX 采购顾问将协助您获取所需资料并对接报价。
+        </p>
+      )}
     </div>
   )
 }
