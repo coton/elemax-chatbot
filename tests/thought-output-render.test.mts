@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { splitThoughtContent } from '../app/components/chat/answer/thought-content'
+import { splitThoughtContent } from '../app/components/chat/answer/thought-content.ts'
 
 const answer = readFileSync('app/components/chat/answer/index.tsx', 'utf8')
 const thoughtContent = readFileSync('app/components/chat/answer/thought-content.ts', 'utf8')

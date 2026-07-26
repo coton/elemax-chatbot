@@ -79,6 +79,7 @@ export function StreamdownMarkdown({ content, className = '' }: StreamdownMarkdo
     () => [...content.matchAll(markdownLinkUrlRegex)].some(match => isTrustedPdfResource(match[1])),
     [content],
   )
+  const hasProcurementContact = content.includes('procurement@elemax.com')
   const processedContent = useMemo(
     () => preprocessLaTeX(
       hasBrandResources
@@ -96,7 +97,7 @@ export function StreamdownMarkdown({ content, className = '' }: StreamdownMarkdo
       >
         {processedContent}
       </Streamdown>
-      {hasBrandResources && (
+      {hasBrandResources && !hasProcurementContact && (
         <p className="mt-4 border-t border-divider-subtle pt-3 text-sm leading-6 text-text-secondary">
           需要具体型号的参数表、GB 证书复印件或正式报价？请联系
           {' '}

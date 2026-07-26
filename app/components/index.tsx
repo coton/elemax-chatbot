@@ -657,7 +657,7 @@ const Main: FC<IMainProps> = () => {
 
   const handleDeleteConversation = async (id: string) => {
     if (id === '-1') { return }
-    if (conversationList.find(item => item.id === id)?.is_read_only) { return }
+    const conversationToDelete = conversationList.find(item => item.id === id)
 
     if (id === currConversationId && isResponding) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
@@ -693,7 +693,7 @@ const Main: FC<IMainProps> = () => {
     }
 
     try {
-      await deleteConversationRequest(id)
+      await deleteConversationRequest(id, conversationToDelete?.archive_app_id)
 
       notify({ type: 'success', message: t('app.chat.deleteConversationSuccess') })
     }

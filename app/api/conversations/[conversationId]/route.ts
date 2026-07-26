@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { client, getInfo, handleRouteError } from '@/app/api/utils/common'
+import { buildLegacyDifyUser, client, getArchivedClient, getInfo, handleRouteError } from '@/app/api/utils/common'
 
 export async function DELETE(request: NextRequest, { params }: {
   params: Promise<{ conversationId: string }>
@@ -14,8 +14,18 @@ export async function DELETE(request: NextRequest, { params }: {
       }, { status: 400 })
     }
 
-    const { user } = await getInfo(request)
-    await client.deleteConversation(conversationId, user)
+    const { userId, user: activeUser } = await getInfo(request)
+    const archiveAppId = request.nextUrl.searchParams.get('archive_app_id')
+    const selectedClient = archiveAppId ? getArchivedClient(archiveAppId) : client
+
+    if (!selectedClient) {
+      return NextResponse.json({
+        message: 'Archived application is not configured.',
+      }, { status: 400 })
+    }
+
+    const user = archiveAppId ? buildLegacyDifyUser(archiveAppId, userId) : activeUser
+    await selectedClient.deleteConversation(conversationId, user)
 
     return new Response(null, { status: 204 })
   }

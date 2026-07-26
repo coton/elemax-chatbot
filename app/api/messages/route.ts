@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { client, getArchivedClient, getInfo, handleRouteError } from '@/app/api/utils/common'
+import { buildLegacyDifyUser, client, getArchivedClient, getInfo, handleRouteError } from '@/app/api/utils/common'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Archived application is not configured.' }, { status: 404 })
     }
 
-    const { user } = await getInfo(request, archiveAppId || undefined)
+    const { userId, user: activeUser } = await getInfo(request)
+    const user = archiveAppId ? buildLegacyDifyUser(archiveAppId, userId) : activeUser
     console.log('[messages] GET user:', user, 'conversation_id:', conversationId)
     const { data }: any = await selectedClient.getConversationMessages(user, conversationId as string, firstId, Number.isFinite(limit) ? limit : null)
     console.log('[messages] GET response data count:', Array.isArray(data?.data) ? data.data.length : 'N/A', 'has_more:', data?.has_more)

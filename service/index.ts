@@ -85,6 +85,7 @@ export const generationConversationName = async (id: string) => {
   return post(`conversations/${id}/name`, { body: { auto_generate: true } })
 }
 
-export const deleteConversation = async (id: string) => {
-  return del(`conversations/${id}`)
+export const deleteConversation = async (id: string, archiveAppId?: string) => {
+  const query = archiveAppId ? `?archive_app_id=${encodeURIComponent(archiveAppId)}` : ''
+  return del(`conversations/${id}${query}`)
 }

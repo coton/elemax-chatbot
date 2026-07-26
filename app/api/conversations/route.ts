@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { buildDifyUser, client, getArchivedClient, getInfo, handleRouteError } from '@/app/api/utils/common'
+import { buildLegacyDifyUser, client, getArchivedClient, getInfo, handleRouteError } from '@/app/api/utils/common'
 import { DIFY_ARCHIVED_APPS, DIFY_CONFIG_UPDATED_AT } from '@/config/server'
 
 const configUpdatedAt = Date.parse(DIFY_CONFIG_UPDATED_AT.trim())
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         const archiveClient = getArchivedClient(archive.appId)
         if (!archiveClient) { return [] }
 
-        const archiveUser = buildDifyUser(archive.appId, userId)
+        const archiveUser = buildLegacyDifyUser(archive.appId, userId)
         const { data: archiveData }: any = await archiveClient.getConversations(
           archiveUser,
           null,

@@ -2,10 +2,10 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { ChatClient } from 'dify-client'
-import { APP_ID } from '@/config'
 import { DIFY_API_URL, DIFY_APP_KEY, DIFY_ARCHIVED_APPS } from '@/config/server'
 
-export const buildDifyUser = (appId: string, clerkUserId: string) => `user_${appId}:${clerkUserId}`
+export const buildDifyUser = (clerkUserId: string) => `clerk:${clerkUserId}`
+export const buildLegacyDifyUser = (appId: string, clerkUserId: string) => `user_${appId}:${clerkUserId}`
 
 export class UnauthorizedError extends Error {
   status = 401
@@ -15,13 +15,13 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export const getInfo = async (_request?: NextRequest, appId = APP_ID) => {
+export const getInfo = async (_request?: NextRequest) => {
   const { userId } = await auth()
   if (!userId) {
     throw new UnauthorizedError()
   }
 
-  const user = buildDifyUser(appId, userId)
+  const user = buildDifyUser(userId)
   return {
     userId,
     user,

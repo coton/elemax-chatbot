@@ -5,9 +5,11 @@ import test from 'node:test'
 const serverConfig = readFileSync('config/server.ts', 'utf8')
 const apiCommon = readFileSync('app/api/utils/common.ts', 'utf8')
 const conversationsRoute = readFileSync('app/api/conversations/route.ts', 'utf8')
+const deleteConversationRoute = readFileSync('app/api/conversations/[conversationId]/route.ts', 'utf8')
 const messagesRoute = readFileSync('app/api/messages/route.ts', 'utf8')
 const mainComponent = readFileSync('app/components/index.tsx', 'utf8')
 const sidebar = readFileSync('app/components/sidebar/index.tsx', 'utf8')
+const service = readFileSync('service/index.ts', 'utf8')
 const globalStyles = readFileSync('app/styles/globals.css', 'utf8')
 
 test('archived Dify apps use indexed server-only configuration', () => {
@@ -17,9 +19,10 @@ test('archived Dify apps use indexed server-only configuration', () => {
 })
 
 test('active and archived Dify users derive from the same Clerk user id', () => {
-  assert.match(apiCommon, /buildDifyUser = \(appId: string, clerkUserId: string\)/)
-  assert.match(apiCommon, /`user_\$\{appId\}:\$\{clerkUserId\}`/)
-  assert.match(conversationsRoute, /buildDifyUser\(archive\.appId, userId\)/)
+  assert.match(apiCommon, /buildDifyUser = \(clerkUserId: string\) => `clerk:\$\{clerkUserId\}`/)
+  assert.match(apiCommon, /buildLegacyDifyUser = \(appId: string, clerkUserId: string\)/)
+  assert.match(conversationsRoute, /buildLegacyDifyUser\(archive\.appId, userId\)/)
+  assert.match(messagesRoute, /archiveAppId \? buildLegacyDifyUser\(archiveAppId, userId\) : activeUser/)
 })
 
 test('conversation API marks archive records read-only and routes message history by app', () => {
@@ -30,11 +33,19 @@ test('conversation API marks archive records read-only and routes message histor
   assert.match(messagesRoute, /getArchivedClient\(archiveAppId\)/)
 })
 
-test('archive conversations are visibly separated and cannot use active-app actions', () => {
-  assert.match(sidebar, /Previous version history/)
-  assert.match(sidebar, /!item\.is_read_only/)
+test('archive conversations use an inline legacy badge without a separate section', () => {
+  assert.doesNotMatch(sidebar, /Previous version history/)
+  assert.match(sidebar, />\s*Legacy\s*</)
   assert.match(mainComponent, /feedbackDisabled: isCurrentConversationArchived/)
   assert.match(mainComponent, /archiveAppId: currentConversation\?\.archive_app_id/)
+})
+
+test('archive conversations can be deleted through their configured Dify app', () => {
+  assert.match(service, /archive_app_id=\$\{encodeURIComponent\(archiveAppId\)\}/)
+  assert.match(mainComponent, /conversationToDelete\?\.archive_app_id/)
+  assert.match(deleteConversationRoute, /getArchivedClient\(archiveAppId\)/)
+  assert.match(deleteConversationRoute, /buildLegacyDifyUser\(archiveAppId, userId\)/)
+  assert.match(deleteConversationRoute, /selectedClient\.deleteConversation\(conversationId, user\)/)
 })
 
 test('conversation list keeps a visible, bounded scrollbar', () => {

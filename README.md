@@ -143,10 +143,12 @@ DIFY_APP_KEY=<new-chatflow-backend-service-api-key>
 DIFY_API_URL=https://ai.elemaxai.com/v1
 ```
 
-The frontend derives both Dify user identifiers from the same Clerk `userId`.
-Archived conversations remain readable but cannot be deleted, rated, retried,
-or continued. Add `DIFY_ARCHIVE_2_*` through `DIFY_ARCHIVE_5_*` for future
-application replacements.
+Active and future Dify Apps use the stable identifier `clerk:<Clerk userId>`.
+The legacy Chatbot archive retains its historical
+`user_<APP_ID>:<Clerk userId>` identifier for history access. Archived
+conversations can be deleted, but cannot be rated, retried, or continued. Add
+`DIFY_ARCHIVE_2_*` through `DIFY_ARCHIVE_5_*` for future application
+replacements.
 
 `DIFY_CONFIG_UPDATED_AT` must be changed only when the Chatflow is published. Use Asia/Shanghai time with an explicit `+08:00` offset, then redeploy the relevant Vercel environment.
 

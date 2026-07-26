@@ -226,49 +226,40 @@ const Sidebar: FC<ISidebarProps> = ({
       </div>
 
       <nav className="conversation-list-scrollbar min-h-0 flex-1 space-y-0.5 overflow-y-scroll py-4 pl-3 pr-1">
-        {list.map((item, index) => {
+        {list.map((item) => {
           const isCurrent = item.id === currentId
-          const showArchiveHeading = item.source === 'archive' && list[index - 1]?.source !== 'archive'
           return (
-            <React.Fragment key={`${item.source || 'active'}:${item.id}`}>
-              {showArchiveHeading && (
-                <div className="mb-1 mt-4 border-t border-divider-regular px-3 pt-4 text-xs font-medium text-text-tertiary">
-                  Previous version history
-                </div>
+            <div
+              key={`${item.source || 'active'}:${item.id}`}
+              onClick={() => onCurrentIdChange(item.id)}
+              className={classNames(
+                isCurrent
+                  ? 'bg-[#eaf2ff] text-primary-600 hover:bg-[#eaf2ff]'
+                  : 'text-gray-700 hover:bg-[#eef0f3] hover:text-gray-800',
+                'group flex items-center rounded-lg p-1 pl-3 text-sm font-medium cursor-pointer',
               )}
-              <div
-                onClick={() => onCurrentIdChange(item.id)}
-                className={classNames(
-                  isCurrent
-                    ? 'bg-[#eaf2ff] text-primary-600 hover:bg-[#eaf2ff]'
-                    : 'text-gray-700 hover:bg-[#eef0f3] hover:text-gray-800',
-                  'group flex items-center rounded-lg p-1 pl-3 text-sm font-medium cursor-pointer',
-                )}
-              >
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <span className="truncate py-1">{item.name}</span>
-                  {item.source === 'archive' && (
-                    <span className="shrink-0 rounded bg-state-base-hover px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary">
-                      Legacy
-                    </span>
-                  )}
-                </div>
-                {!item.is_read_only && (
-                  <button
-                    type="button"
-                    className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-text-tertiary opacity-0 pointer-events-none hover:bg-state-destructive-hover hover:text-text-destructive group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto"
-                    aria-label={t('app.chat.deleteConversation')}
-                    title={t('app.chat.deleteConversation')}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDeleteConversation(item.id)
-                    }}
-                  >
-                    <TrashIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="truncate py-1">{item.name}</span>
+                {item.source === 'archive' && (
+                  <span className="shrink-0 rounded bg-state-base-hover px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary">
+                    Legacy
+                  </span>
                 )}
               </div>
-            </React.Fragment>
+              <button
+                type="button"
+                className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-text-tertiary opacity-0 pointer-events-none hover:bg-state-destructive-hover hover:text-text-destructive group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto"
+                aria-label={t('app.chat.deleteConversation')}
+                title={t('app.chat.deleteConversation')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeleteConversation(item.id)
+                }}
+              >
+                <TrashIcon className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
           )
         })}
       </nav>
