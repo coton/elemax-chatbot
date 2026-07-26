@@ -48,9 +48,14 @@ export const fetchConversations = async () => {
   return get('conversations', { params: { limit: 100, first_id: '' } })
 }
 
-export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal, firstId?: string | null, limit?: number }) => {
+export const fetchChatList = async (conversationId: string, options?: { signal?: AbortSignal, firstId?: string | null, limit?: number, archiveAppId?: string }) => {
   const fetchOptions: Record<string, unknown> = {
-    params: { conversation_id: conversationId, limit: options?.limit || 100, first_id: options?.firstId || '' },
+    params: {
+      conversation_id: conversationId,
+      limit: options?.limit || 100,
+      first_id: options?.firstId || '',
+      ...(options?.archiveAppId ? { archive_app_id: options.archiveAppId } : {}),
+    },
   }
   if (options?.signal) { fetchOptions.signal = options.signal }
 

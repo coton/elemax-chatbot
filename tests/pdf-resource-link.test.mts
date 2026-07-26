@@ -23,3 +23,9 @@ test('PDF links open safely without exposing the current window', () => {
 test('message Markdown uses the PDF-aware link component', () => {
   assert.match(streamdownMarkdown, /components=\{\{ a: MarkdownResourceLink \}\}/)
 })
+
+test('brand resource responses use the customer-facing title and procurement contact', () => {
+  assert.match(streamdownMarkdown, /content\.replaceAll\('厂商产品资料', '品牌产品资料'\)/)
+  assert.match(streamdownMarkdown, /href="mailto:procurement@elemax\.com"/)
+  assert.match(streamdownMarkdown, /ELEMAX 采购顾问将协助您获取所需资料并对接报价/)
+})

@@ -87,6 +87,7 @@ export interface IChatProps {
   isSidebarCollapsed?: boolean
   isSendLocked?: boolean
   isConversationStale?: boolean
+  isArchivedConversation?: boolean
   onStartLatestConversation?: () => void
 }
 
@@ -110,6 +111,7 @@ const Chat: FC<IChatProps> = ({
   isSidebarCollapsed = false,
   isSendLocked = false,
   isConversationStale = false,
+  isArchivedConversation = false,
   onStartLatestConversation,
 }) => {
   const { t } = useTranslation()
@@ -566,9 +568,13 @@ const Chat: FC<IChatProps> = ({
           {isConversationStale
             ? (
               <div className="rounded-xl border border-state-accent-border bg-components-panel-bg px-4 py-3 shadow-md backdrop-blur-sm">
-                <div className="text-sm font-semibold text-text-primary">Max AI has been updated</div>
+                <div className="text-sm font-semibold text-text-primary">
+                  {isArchivedConversation ? 'Previous version conversation' : 'Max AI has been updated'}
+                </div>
                 <p className="mt-1 text-sm leading-5 text-text-tertiary">
-                  Start a new chat to use the latest version.
+                  {isArchivedConversation
+                    ? 'This conversation is available as read-only history.'
+                    : 'Start a new chat to use the latest version.'}
                 </p>
                 <button
                   type="button"
