@@ -9,6 +9,32 @@ const questionComponent = readFileSync('app/components/chat/question/index.tsx',
 const toastComponent = readFileSync('app/components/base/toast/index.tsx', 'utf8')
 const globalsCss = readFileSync('app/styles/globals.css', 'utf8')
 const userMenuCss = readFileSync('app/components/header/custom-user-menu.module.css', 'utf8')
+const nextConfig = readFileSync('next.config.js', 'utf8')
+const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))
+
+assert.equal(
+  packageJson.version,
+  '2.0.0',
+  'the package version should identify the Max AI 2.0 release',
+)
+
+assert.match(
+  sidebarComponent,
+  /Version \{packageJson\.version\}/,
+  'the About dialog should display the package version',
+)
+
+assert.match(
+  sidebarComponent,
+  /Build \{process\.env\.NEXT_PUBLIC_BUILD_SHA \|\| 'local'\}/,
+  'the About dialog should display the source build identifier',
+)
+
+assert.match(
+  nextConfig,
+  /VERCEL_GIT_COMMIT_SHA[\s\S]*rev-parse', '--short=7', 'HEAD'[\s\S]*NEXT_PUBLIC_BUILD_SHA: getBuildSha\(\)/,
+  'the build identifier should prefer the Vercel commit and fall back to the local Git commit',
+)
 
 assert.equal(
   /onOpenSettings/.test(mainComponent + sidebarComponent),

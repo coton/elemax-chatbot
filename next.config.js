@@ -1,5 +1,25 @@
+const { execFileSync } = require('node:child_process')
+
+const getBuildSha = () => {
+  const vercelCommitSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim()
+  if (vercelCommitSha) { return vercelCommitSha.slice(0, 7) }
+
+  try {
+    return execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  }
+  catch {
+    return 'local'
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: getBuildSha(),
+  },
   productionBrowserSourceMaps: false, // enable browser source map generation during the production build
   // Configure pageExtensions to include md and mdx
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],

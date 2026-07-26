@@ -8,6 +8,7 @@ import React from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import BrandImage from '@/app/components/brand/brand-image'
+import packageJson from '@/package.json'
 // import Card from './card'
 import type { ConversationItem } from '@/types/app'
 
@@ -146,7 +147,12 @@ const AboutDialog = ({
           <div id="about-dialog-title" className="max-w-[340px] text-center text-[17px] font-semibold leading-6 text-text-secondary">
             MaxAI is a smart AI consultant for the building engineering services industry.
           </div>
-          <div className="system-xs-regular text-text-tertiary" />
+          <div className="system-xs-regular text-text-tertiary">
+            Version {packageJson.version}
+          </div>
+          <div className="system-xs-regular text-text-tertiary">
+            Build {process.env.NEXT_PUBLIC_BUILD_SHA || 'local'}
+          </div>
         </div>
       </div>
     </div>,
