@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
             ...conversation,
             source: 'archive',
             archive_app_id: archive.appId,
-            archive_label: archive.label,
             is_read_only: true,
             is_stale_config: true,
           }))

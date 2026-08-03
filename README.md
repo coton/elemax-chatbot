@@ -22,8 +22,7 @@ DIFY_API_URL=
 # Optional previous Dify App shown as read-only history.
 DIFY_ARCHIVE_1_APP_ID=
 DIFY_ARCHIVE_1_APP_KEY=
-DIFY_ARCHIVE_1_API_URL=
-DIFY_ARCHIVE_1_LABEL=Max AI v1
+# Archived apps reuse DIFY_API_URL. Add incremented APP_ID/APP_KEY pairs for more versions.
 
 # Clerk auth.
 # Use pk_live_... and sk_live_... on the main/production deployment.
@@ -117,8 +116,6 @@ DIFY_APP_KEY=
 DIFY_API_URL=https://api.dify.ai/v1
 DIFY_ARCHIVE_1_APP_ID=
 DIFY_ARCHIVE_1_APP_KEY=
-DIFY_ARCHIVE_1_API_URL=https://api.dify.ai/v1
-DIFY_ARCHIVE_1_LABEL=Max AI v1
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 CLERK_SECRET_KEY=sk_live_...
@@ -134,14 +131,14 @@ The active Max AI Chatflow is `61b66232-960e-40e2-a2b6-fa67906d28da`. In each re
 # Legacy Chatbot configuration exposed as read-only history
 DIFY_ARCHIVE_1_APP_ID=<previous-chatbot-app-id>
 DIFY_ARCHIVE_1_APP_KEY=<previous-chatbot-backend-service-key>
-DIFY_ARCHIVE_1_API_URL=<previous-api-url>
-DIFY_ARCHIVE_1_LABEL=Max AI v1
 
 # Active Max AI v2 Chatflow
 NEXT_PUBLIC_APP_ID=61b66232-960e-40e2-a2b6-fa67906d28da
 DIFY_APP_KEY=<new-chatflow-backend-service-api-key>
 DIFY_API_URL=https://ai.elemaxai.com/v1
 ```
+
+All archived apps use the active `DIFY_API_URL`.
 
 Active and future Dify Apps use the stable identifier `clerk:<Clerk userId>`.
 The legacy Chatbot archive retains its historical

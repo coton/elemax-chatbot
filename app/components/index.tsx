@@ -34,6 +34,7 @@ import {
   setActiveQuestionVariantIndex,
   withAnswerHistory,
 } from '@/utils/chat-variants'
+import { recoverCompletedAnswer } from '@/utils/chat-message-recovery'
 
 export interface IMainProps {
   params: any
@@ -1055,11 +1056,12 @@ const Main: FC<IMainProps> = () => {
 
         const shouldSyncNewConversation = getConversationIdChangeBecauseOfNew()
         const startedConversationId = tempNewConversationId || respondingConversationIdRef.current || ''
-        finishResponseStream()
-
         let nextConversationId = startedConversationId
         let syncedConversations: ConversationItem[] | undefined
 
+        // A new conversation can finish before its id has been committed to local state.
+        // Resolve it first so the persisted answer can always be used as the final source
+        // of truth, even when the streamed content looked non-empty internally.
         if (shouldSyncNewConversation && !nextConversationId) {
           try {
             syncedConversations = await syncConversationHistory({
@@ -1071,6 +1073,43 @@ const Main: FC<IMainProps> = () => {
             notify({ type: 'error', message: error?.message || 'Failed to load conversation' })
           }
         }
+
+        if (!isCurrentRequest()) { return }
+
+        if (responseMessageId && nextConversationId) {
+          const recoveredAnswer = await recoverCompletedAnswer(
+            () => fetchChatList(nextConversationId, { limit: 20 }),
+            responseMessageId,
+          )
+          if (!isCurrentRequest()) { return }
+
+          if (recoveredAnswer) { responseItem.content = recoveredAnswer }
+        }
+
+        // Re-commit the immutable final response after all async completion work.
+        // This prevents a late streaming state update from leaving an empty bubble.
+        if (responseItem.content.trim()) {
+          updateCurrentQA({
+            responseItem: getResponseItem(),
+            questionId,
+            placeholderAnswerId,
+            questionItem,
+          })
+        }
+
+        if (!responseItem.content.trim()) {
+          finishCurrentResponse()
+          setChatList(produce(getChatList(), (draft) => {
+            const emptyAnswerIndex = draft.findIndex(item =>
+              item.id === responseItem.id || item.id === placeholderAnswerId,
+            )
+            if (emptyAnswerIndex > -1) { draft.splice(emptyAnswerIndex, 1) }
+          }))
+          notify({ type: 'error', message: 'The answer was saved but could not be displayed. Please retry.' })
+          return
+        }
+
+        finishResponseStream()
 
         if (!isCurrentRequest()) { return }
 

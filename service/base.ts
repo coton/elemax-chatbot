@@ -2,6 +2,7 @@ import { API_PREFIX } from '@/config'
 import Toast from '@/app/components/base/toast'
 import type { AnnotationReply, MessageEnd, MessageReplace, ThoughtItem } from '@/app/components/chat/type'
 import type { VisionFile } from '@/types/app'
+import { createParser } from 'eventsource-parser'
 
 const TIME_OUT = 100000
 
@@ -158,100 +159,90 @@ const handleStream = (
 
   const reader = response.body?.getReader()
   const decoder = new TextDecoder('utf-8')
-  let buffer = ''
-  let bufferObj: Record<string, any>
   let isFirstMessage = true
-  function read() {
-    let hasError = false
-    reader?.read().then((result: any) => {
-      if (result.done) {
-        onCompleted && onCompleted()
-        return
+  let isCompleted = false
+
+  const complete = (hasError?: boolean) => {
+    if (isCompleted) { return }
+    isCompleted = true
+    onCompleted?.(hasError)
+  }
+
+  const dispatchEvent = (data: string) => {
+    let event: Record<string, any>
+    try {
+      event = JSON.parse(data) as Record<string, any>
+    }
+    catch (error) {
+      onError?.(`Invalid streaming response: ${error}`)
+      complete(true)
+      return
+    }
+
+    if (event.status === 400 || !event.event) {
+      onData('', false, {
+        conversationId: undefined,
+        messageId: '',
+        errorMessage: event.message,
+        errorCode: event.code,
+      })
+      complete(true)
+      return
+    }
+    if (event.event === 'message' || event.event === 'agent_message') {
+      onData(unicodeToChar(event.answer), isFirstMessage, {
+        conversationId: event.conversation_id,
+        taskId: event.task_id,
+        messageId: event.id,
+      })
+      isFirstMessage = false
+    }
+    else if (event.event === 'agent_thought') { onThought?.(event as ThoughtItem) }
+    else if (event.event === 'message_file') { onFile?.(event as VisionFile) }
+    else if (event.event === 'message_end') { onMessageEnd?.(event as MessageEnd) }
+    else if (event.event === 'message_replace') { onMessageReplace?.(event as MessageReplace) }
+    else if (event.event === 'workflow_started') { onWorkflowStarted?.(event as WorkflowStartedResponse) }
+    else if (event.event === 'workflow_finished') { onWorkflowFinished?.(event as WorkflowFinishedResponse) }
+    else if (event.event === 'node_started') { onNodeStarted?.(event as NodeStartedResponse) }
+    else if (event.event === 'node_finished') { onNodeFinished?.(event as NodeFinishedResponse) }
+  }
+
+  const parser = createParser((parsedEvent) => {
+    if (parsedEvent.type === 'event' && !isCompleted) { dispatchEvent(parsedEvent.data) }
+  })
+
+  const read = async () => {
+    if (!reader) {
+      onError?.('Streaming response body is unavailable')
+      complete(true)
+      return
+    }
+
+    try {
+      while (true) {
+        if (isCompleted) { return }
+        const result = await reader.read()
+        if (result.done) {
+          parser.feed(decoder.decode())
+          // Some proxies close immediately after the final SSE data line. A
+          // terminating blank line lets the parser dispatch that buffered event.
+          parser.feed('\n\n')
+          complete()
+          return
+        }
+        parser.feed(decoder.decode(result.value, { stream: true }))
       }
-      buffer += decoder.decode(result.value, { stream: true })
-      const lines = buffer.split('\n')
-      try {
-        lines.forEach((message) => {
-          if (message.startsWith('data: ')) { // check if it starts with data:
-            try {
-              bufferObj = JSON.parse(message.substring(6)) as Record<string, any>// remove data: and parse as json
-            }
-            catch {
-              // mute handle message cut off
-              onData('', isFirstMessage, {
-                conversationId: bufferObj?.conversation_id,
-                messageId: bufferObj?.message_id,
-              })
-              return
-            }
-            if (bufferObj.status === 400 || !bufferObj.event) {
-              onData('', false, {
-                conversationId: undefined,
-                messageId: '',
-                errorMessage: bufferObj?.message,
-                errorCode: bufferObj?.code,
-              })
-              hasError = true
-              onCompleted?.(true)
-              return
-            }
-            if (bufferObj.event === 'message' || bufferObj.event === 'agent_message') {
-              // can not use format here. Because message is splited.
-              onData(unicodeToChar(bufferObj.answer), isFirstMessage, {
-                conversationId: bufferObj.conversation_id,
-                taskId: bufferObj.task_id,
-                messageId: bufferObj.id,
-              })
-              isFirstMessage = false
-            }
-            else if (bufferObj.event === 'agent_thought') {
-              onThought?.(bufferObj as ThoughtItem)
-            }
-            else if (bufferObj.event === 'message_file') {
-              onFile?.(bufferObj as VisionFile)
-            }
-            else if (bufferObj.event === 'message_end') {
-              onMessageEnd?.(bufferObj as MessageEnd)
-            }
-            else if (bufferObj.event === 'message_replace') {
-              onMessageReplace?.(bufferObj as MessageReplace)
-            }
-            else if (bufferObj.event === 'workflow_started') {
-              onWorkflowStarted?.(bufferObj as WorkflowStartedResponse)
-            }
-            else if (bufferObj.event === 'workflow_finished') {
-              onWorkflowFinished?.(bufferObj as WorkflowFinishedResponse)
-            }
-            else if (bufferObj.event === 'node_started') {
-              onNodeStarted?.(bufferObj as NodeStartedResponse)
-            }
-            else if (bufferObj.event === 'node_finished') {
-              onNodeFinished?.(bufferObj as NodeFinishedResponse)
-            }
-          }
-        })
-        buffer = lines[lines.length - 1]
-      }
-      catch (e) {
-        onData('', false, {
-          conversationId: undefined,
-          messageId: '',
-          errorMessage: `${e}`,
-        })
-        hasError = true
-        onCompleted?.(true)
-        return
-      }
-      if (!hasError) { read() }
-    }).catch((e) => {
-      if (e?.name === 'AbortError') {
+    }
+    catch (error: any) {
+      if (error?.name === 'AbortError') {
         onError?.('aborted', 'aborted')
         return
       }
-      onError?.(`${e}`)
-    })
+      onError?.(`${error}`)
+    }
   }
-  read()
+
+  void read()
 }
 
 const baseFetch = (url: string, fetchOptions: any, { needAllResponseContent, silent }: IOtherOptions) => {

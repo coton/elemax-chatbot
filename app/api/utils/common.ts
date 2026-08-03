@@ -38,7 +38,7 @@ export const handleRouteError = (error: any) => {
 export const client = new ChatClient(DIFY_APP_KEY, DIFY_API_URL)
 
 const archivedClients = new Map(
-  DIFY_ARCHIVED_APPS.map(app => [app.appId, new ChatClient(app.appKey, app.apiUrl)]),
+  DIFY_ARCHIVED_APPS.map(app => [app.appId, new ChatClient(app.appKey, DIFY_API_URL)]),
 )
 
 export const getArchivedClient = (appId: string) => archivedClients.get(appId)

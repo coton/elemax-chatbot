@@ -14,7 +14,13 @@ export async function POST(request: NextRequest) {
     const { user } = await getInfo(request)
     console.log('[chat-messages] POST user:', user, 'conversation_id:', conversationId)
     const res = await client.createChatMessage(inputs, query, user, responseMode, conversationId, files)
-    return new Response(res.data as any)
+    return new Response(res.data as any, {
+      headers: {
+        'Cache-Control': 'no-cache, no-transform',
+        'Content-Type': res.headers?.['content-type'] || 'text/event-stream; charset=utf-8',
+        'X-Accel-Buffering': 'no',
+      },
+    })
   }
   catch (error: any) {
     return handleRouteError(error)

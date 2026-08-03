@@ -16,6 +16,9 @@ test('archived Dify apps use indexed server-only configuration', () => {
   assert.match(serverConfig, /DIFY_ARCHIVE_\$\{index \+ 1\}/)
   assert.match(serverConfig, /\.filter\(app => app\.appId && app\.appKey\)/)
   assert.doesNotMatch(serverConfig, /NEXT_PUBLIC_DIFY_ARCHIVE/)
+  assert.doesNotMatch(serverConfig, /\$\{prefix\}_API_URL/)
+  assert.doesNotMatch(serverConfig, /\$\{prefix\}_LABEL/)
+  assert.match(apiCommon, /new ChatClient\(app\.appKey, DIFY_API_URL\)/)
 })
 
 test('active and archived Dify users derive from the same Clerk user id', () => {
@@ -27,6 +30,7 @@ test('active and archived Dify users derive from the same Clerk user id', () => 
 
 test('conversation API marks archive records read-only and routes message history by app', () => {
   assert.match(conversationsRoute, /source: 'archive'/)
+  assert.doesNotMatch(conversationsRoute, /archive_label/)
   assert.match(conversationsRoute, /is_read_only: true/)
   assert.match(conversationsRoute, /is_stale_config: true/)
   assert.match(messagesRoute, /archive_app_id/)

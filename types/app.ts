@@ -119,7 +119,6 @@ export interface ConversationItem {
   is_stale_config?: boolean
   source?: 'active' | 'archive'
   archive_app_id?: string
-  archive_label?: string
   is_read_only?: boolean
 }
 
