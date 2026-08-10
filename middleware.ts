@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/__clerk(.*)',
+  '/api/admin/dify-config(.*)',
 ])
 
 export default clerkMiddleware(async (auth, req) => {
