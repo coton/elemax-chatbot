@@ -112,6 +112,12 @@ export async function POST(request: NextRequest) {
     })
   }
   catch (error) {
+    console.error(JSON.stringify({
+      level: 'error',
+      message: 'Failed to update DIFY_CONFIG_UPDATED_AT',
+      route: '/api/admin/dify-config',
+      error: error instanceof Error ? error.message : String(error),
+    }))
     return NextResponse.json({
       status: 'failed',
       error: error instanceof Error ? error.message : String(error),
