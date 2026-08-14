@@ -551,7 +551,8 @@ const Main: FC<IMainProps> = () => {
   }, [])
 
   const [isResponding, { setTrue: setRespondingTrue, setFalse: setRespondingFalse }] = useBoolean(false)
-  const [isSendLocked, { setTrue: lockSending, setFalse: unlockSending }] = useBoolean(false)
+  const [isSendLocked, { setTrue: setSendLockedTrue, setFalse: setSendLockedFalse }] = useBoolean(false)
+  const sendLockRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const sendRequestIdRef = useRef(0)
   const suggestedQuestionsRequestIdRef = useRef(0)
@@ -563,6 +564,16 @@ const Main: FC<IMainProps> = () => {
   const { notify } = Toast
   const logError = (message: string) => {
     notify({ type: 'error', message })
+  }
+
+  const lockSending = () => {
+    sendLockRef.current = true
+    setSendLockedTrue()
+  }
+
+  const unlockSending = () => {
+    sendLockRef.current = false
+    setSendLockedFalse()
   }
 
   const markRespondingConversationStarted = (conversationId?: string) => {
@@ -911,7 +922,7 @@ const Main: FC<IMainProps> = () => {
   const handleSend = (message: string, files?: VisionFile[], options?: { answerHistory?: ChatItem[], baseChatList?: ChatItem[] }) => {
     if (isCurrentConversationStale) { return false }
 
-    if (isSendLocked) {
+    if (sendLockRef.current) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return false
     }
@@ -1346,7 +1357,7 @@ const Main: FC<IMainProps> = () => {
   const handleRetry = (answer: ChatItem, overrideQuestionContent?: string, baseChatList?: ChatItem[]) => {
     if (isCurrentConversationStale) { return }
 
-    if (isSendLocked) {
+    if (sendLockRef.current) {
       notify({ type: 'info', message: t('app.errorMessage.waitForResponse') })
       return
     }

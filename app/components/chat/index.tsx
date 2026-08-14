@@ -657,6 +657,7 @@ const Chat: FC<IChatProps> = ({
                         type="button"
                         className="btn disabled:btn-disabled btn-primary h-8 w-8 p-0"
                         style={{ backgroundColor: 'rgb(28, 100, 242)' }}
+                        disabled={isSendLocked}
                         onMouseDown={e => e.preventDefault()}
                         onClick={handleSend}
                       >
