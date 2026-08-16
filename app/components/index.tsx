@@ -1116,7 +1116,7 @@ const Main: FC<IMainProps> = () => {
             )
             if (emptyAnswerIndex > -1) { draft.splice(emptyAnswerIndex, 1) }
           }))
-          notify({ type: 'error', message: 'The answer was saved but could not be displayed. Please retry.' })
+          notify({ type: 'error', message: 'No answer was generated because the workflow failed. Please retry.' })
           return
         }
 

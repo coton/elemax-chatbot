@@ -26,4 +26,6 @@ test('every completed stream reconciles with the persisted Dify answer', () => {
   assert.match(mainComponent, /fetchChatList\(nextConversationId, \{ limit: 20 \}\)/)
   assert.match(mainComponent, /responseItem\.content = recoveredAnswer/)
   assert.match(mainComponent, /if \(responseItem\.content\.trim\(\)\) \{\s+updateCurrentQA/)
+  assert.doesNotMatch(mainComponent, /The answer was saved but could not be displayed/)
+  assert.match(mainComponent, /No answer was generated because the workflow failed/)
 })
