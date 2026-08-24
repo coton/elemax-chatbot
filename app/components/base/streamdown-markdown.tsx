@@ -13,7 +13,38 @@ interface StreamdownMarkdownProps {
 const codeBlockRegex = /```[\s\S]*?```/g
 const dollarPlaceholder = '_STREAMDOWN_MARKDOWN_DOLLAR_'
 const tableDelimiterCellRegex = /^:?-{3,}:?$/
-const markdownLinkUrlRegex = /\]\((https?:\/\/[^)\s]+)\)/g
+const markdownLinkUrlRegex = /\]\((https?:\/\/[^)\n]+)\)/g
+
+// CDN PDF URLs may be stored un-percent-encoded (raw spaces / Chinese file names),
+// which breaks CommonMark link parsing — react-markdown renders the whole
+// `[title](url)` as plain text, so no PDF card is shown and the link is not
+// clickable. Encode these URLs before markdown parsing. Encoding is idempotent:
+// already percent-encoded sequences (%20, %E7...)) are left untouched.
+const cdnPdfUrlRegex = /(https:\/\/cdn\.elemaxai\.com\/manufacturer-product-pdfs\/[^\n]*?\.pdf)/g
+
+const encodeUrl = (value: string) => {
+  let out = ''
+  let i = 0
+  while (i < value.length) {
+    const ch = value[i]
+    if (ch === '%' && /^[0-9A-Fa-f]{2}$/.test(value.slice(i + 1, i + 3))) {
+      out += ch + value.slice(i + 1, i + 3)
+      i += 3
+    }
+    else if (/[A-Za-z0-9\-._~!$&'()*+,;=:@/]/.test(ch)) {
+      out += ch
+      i += 1
+    }
+    else {
+      out += encodeURIComponent(ch)
+      i += 1
+    }
+  }
+  return out
+}
+
+const encodeCdnPdfUrls = (content: string) =>
+  content.replace(cdnPdfUrlRegex, match => encodeUrl(match))
 
 const escapeReplacement = (value: string) =>
   value.replace(/\$/g, dollarPlaceholder)
@@ -57,6 +88,8 @@ const preprocessLaTeX = (content: string) => {
     codeBlockRegex,
     () => `CODE_BLOCK_PLACEHOLDER_${codeBlockIndex++}`,
   )
+
+  processedContent = encodeCdnPdfUrls(processedContent)
 
   processedContent = processedContent
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, equation) => `$$${equation}$$`)
