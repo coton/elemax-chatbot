@@ -511,10 +511,26 @@ const Main: FC<IMainProps> = () => {
           prompt_variables,
         } as PromptConfig)
         const outerFileUploadEnabled = !!file_upload?.enabled
+        // Dify 1.13 normalizes the legacy file_upload.image object into the
+        // top-level file upload fields once image uploads are enabled. Keep
+        // accepting the legacy response while also rebuilding the image
+        // settings from the normalized response used by the live API.
+        const normalizedImageConfig = file_upload?.image || (
+          outerFileUploadEnabled && file_upload?.allowed_file_types?.includes('image')
+            ? {
+              enabled: true,
+              number_limits: file_upload?.number_limits,
+              transfer_methods: file_upload?.allowed_file_upload_methods,
+            }
+            : undefined
+        )
         setVisionConfig({
-          ...file_upload?.image,
-          enabled: !!(outerFileUploadEnabled && file_upload?.image?.enabled),
-          image_file_size_limit: system_parameters?.system_parameters || 0,
+          ...normalizedImageConfig,
+          enabled: !!(outerFileUploadEnabled && normalizedImageConfig?.enabled),
+          image_file_size_limit: normalizedImageConfig?.image_file_size_limit
+            || file_upload?.fileUploadConfig?.image_file_size_limit
+            || system_parameters?.system_parameters
+            || 0,
         })
         setFileConfig({
           enabled: outerFileUploadEnabled,
